@@ -1,0 +1,79 @@
+version: '3.8'
+
+services:
+  # PostgreSQL Database
+  postgres:
+    image: postgres:14-alpine
+    container_name: better-auth-postgres
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: auth_db
+    ports:
+      - "5433:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./backend/docker/init-db.sql:/docker-entrypoint-initdb.d/01-init.sql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+    networks:
+      - better-auth-network
+
+  # Backend Service
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: better-auth-backend
+    ports:
+      - "3005:3005"
+    environment:
+      - DB_HOST=postgres
+      - DB_PORT=5432
+      - DB_USER=postgres
+      - DB_PASSWORD=postgres
+      - DB_NAME=auth_db
+      - PORT=3005
+      - NODE_ENV=development
+      - BETTER_AUTH_SECRET=dev-secret-change-in-production
+      - BETTER_AUTH_URL=http://localhost:3005
+      - ALLOWED_ORIGINS=http://localhost:3000
+      - TRUSTED_ORIGIN=http://localhost:3000
+      - APP_URL=http://localhost:3000
+      - SIWE_DOMAIN=localhost:3000
+      - SIWE_EMAIL_DOMAIN=localhost
+    volumes:
+      - ./backend:/app
+      - /app/node_modules
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: unless-stopped
+    networks:
+      - better-auth-network
+
+  # PgAdmin (Optional)
+  pgadmin:
+    image: dpage/pgadmin4
+    container_name: better-auth-pgadmin
+    environment:
+      PGADMIN_DEFAULT_EMAIL: admin@example.com
+      PGADMIN_DEFAULT_PASSWORD: admin
+    ports:
+      - "5051:80"
+    depends_on:
+      - postgres
+    restart: unless-stopped
+    networks:
+      - better-auth-network
+
+networks:
+  better-auth-network:
+    driver: bridge
+
+volumes:
+  postgres_data:
