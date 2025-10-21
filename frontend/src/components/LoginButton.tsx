@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import { ConnectButton } from '@rainbow-me/rainbowkit';
+import { EmailAuthForm } from './EmailAuthForm';
 
 interface LoginButtonProps {
   onShowModal?: () => void;
@@ -97,6 +98,8 @@ const AuthModal = ({ onClose }: AuthModalProps) => {
     loginWithTwitter,
   } = useAuth();
 
+  const [showEmailAuth, setShowEmailAuth] = useState(false);
+
   return (
     <div
       className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50"
@@ -120,7 +123,42 @@ const AuthModal = ({ onClose }: AuthModalProps) => {
           Join our community of friendly folks discovering and sharing the latest products in tech.
         </p>
 
-        <div className="space-y-3">
+        {showEmailAuth ? (
+          <div>
+            <EmailAuthForm onClose={onClose} />
+            <div className="mt-6 pt-6 border-t border-gray-200">
+              <button
+                onClick={() => setShowEmailAuth(false)}
+                className="text-sm text-gray-600 hover:text-gray-900 flex items-center justify-center w-full"
+              >
+                <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+                </svg>
+                Back to other options
+              </button>
+            </div>
+          </div>
+        ) : (
+          <div className="space-y-3">
+            {/* Email & Password */}
+            <button
+              onClick={() => setShowEmailAuth(true)}
+              className="w-full flex items-center justify-center gap-3 px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg transition-colors"
+            >
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+              </svg>
+              Continue with Email
+            </button>
+
+            <div className="relative">
+              <div className="absolute inset-0 flex items-center">
+                <div className="w-full border-t border-gray-300"></div>
+              </div>
+              <div className="relative flex justify-center text-sm">
+                <span className="px-2 bg-white text-gray-500">Or continue with</span>
+              </div>
+            </div>
           {/* Twitter / X */}
           <button
             onClick={loginWithTwitter}
@@ -176,11 +214,12 @@ const AuthModal = ({ onClose }: AuthModalProps) => {
               );
             }}
           </ConnectButton.Custom>
-        </div>
 
-        <p className="text-xs text-gray-500 text-center mt-6">
-          We'll never post to any of your accounts without your permission.
-        </p>
+            <p className="text-xs text-gray-500 text-center mt-6">
+              We'll never post to any of your accounts without your permission.
+            </p>
+          </div>
+        )}
       </div>
     </div>
   );

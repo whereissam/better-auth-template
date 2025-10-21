@@ -1,6 +1,7 @@
 import { LoginButton } from './components/LoginButton';
 import { useAuth } from './hooks/useAuth';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { ResetPassword } from './pages/ResetPassword';
 
 /**
  * Example App Component
@@ -8,6 +9,22 @@ import { useState } from 'react';
 function App() {
   const { user, isLoading } = useAuth();
   const [showLoginModal, setShowLoginModal] = useState(false);
+  const [currentPath, setCurrentPath] = useState(window.location.pathname);
+
+  // Simple client-side routing
+  useEffect(() => {
+    const handleLocationChange = () => {
+      setCurrentPath(window.location.pathname);
+    };
+
+    window.addEventListener('popstate', handleLocationChange);
+    return () => window.removeEventListener('popstate', handleLocationChange);
+  }, []);
+
+  // Show reset password page if on /reset-password route
+  if (currentPath === '/reset-password') {
+    return <ResetPassword />;
+  }
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -75,14 +92,23 @@ function App() {
                 'Welcome!'
               )}
             </h2>
-            {user.email?.startsWith('0x') && user.email?.includes('@localhost') && (
+            {user.email?.startsWith('0x') && user.email?.includes('@localhost') ? (
               <p className="text-sm text-gray-500 mb-2 font-mono">
                 Connected with Ethereum
+              </p>
+            ) : user.email && !user.email.includes('@localhost') && (
+              <p className="text-sm text-gray-500 mb-2">
+                {user.email}
               </p>
             )}
             <p className="text-gray-600">
               You're successfully authenticated
             </p>
+            {user.id && (
+              <p className="text-xs text-gray-400 mt-2 font-mono">
+                ID: {user.id.slice(0, 8)}...{user.id.slice(-8)}
+              </p>
+            )}
           </div>
         ) : (
           <div className="text-center py-12">

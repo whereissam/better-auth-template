@@ -3,8 +3,15 @@ import { authClient } from '@/lib/auth.client';
 import { getCachedSession, setCachedSession, clearSessionCache } from '@/lib/sessionCache';
 
 interface TwitterUser {
+  id: string;
   username: string;
   avatar: string;
+  email?: string;
+  name?: string;
+  image?: string;
+  emailVerified?: boolean;
+  createdAt?: string;
+  updatedAt?: string;
 }
 
 /**
@@ -25,7 +32,6 @@ export const useTwitterAuth = () => {
 
   useEffect(() => {
     let isMounted = true;
-    let debounceTimer: NodeJS.Timeout;
 
     // Check if user is already authenticated with Better Auth
     const checkAuth = async () => {
@@ -81,13 +87,20 @@ export const useTwitterAuth = () => {
           // Find Twitter account
           const twitterAccount = accounts.find((acc: any) => acc.providerId === 'twitter');
 
-          if (twitterAccount || userData.name) {
+          if (twitterAccount || userData.name || userData.email) {
             const twitterUser: TwitterUser = {
+              id: userData.id,
               username: userData.name || twitterAccount?.accountId || 'User',
               avatar: userData.image || `https://api.dicebear.com/7.x/avataaars/svg?seed=${userData.id}`,
+              email: userData.email,
+              name: userData.name,
+              image: userData.image,
+              emailVerified: userData.emailVerified,
+              createdAt: userData.createdAt,
+              updatedAt: userData.updatedAt,
             };
             setUser(twitterUser);
-            console.log('✅ Twitter user authenticated:', twitterUser);
+            console.log('✅ User authenticated:', twitterUser);
           }
         } else {
           console.log('❌ No session found');
@@ -101,32 +114,34 @@ export const useTwitterAuth = () => {
       }
     };
 
-    // Debounce initial check
-    debounceTimer = setTimeout(() => {
-      checkAuth();
-    }, 500);
+    // Check auth immediately
+    checkAuth();
 
     // Re-check auth when window gains focus (after OAuth redirect)
+    // Only check if we might have just come back from OAuth flow
     let focusDebounceTimer: NodeJS.Timeout;
     let lastFocusCheck = 0;
     const handleFocus = () => {
       const now = Date.now();
-      // Only recheck if it's been more than 5 seconds since last check
-      if (now - lastFocusCheck < 5000) return;
+      // Only recheck if:
+      // 1. It's been more than 10 seconds since last check (increased from 5)
+      // 2. AND we don't already have a user (to avoid unnecessary checks)
+      if (now - lastFocusCheck < 10000 || user) return;
 
       lastFocusCheck = now;
       console.log('🔄 Window focused, rechecking auth...');
       clearTimeout(focusDebounceTimer);
       focusDebounceTimer = setTimeout(() => {
+        // Clear cache before checking to ensure fresh data
+        clearSessionCache();
         checkAuth();
-      }, 1000);
+      }, 500);
     };
 
     window.addEventListener('focus', handleFocus);
 
     return () => {
       isMounted = false;
-      clearTimeout(debounceTimer);
       clearTimeout(focusDebounceTimer);
       window.removeEventListener('focus', handleFocus);
     };
@@ -156,9 +171,14 @@ export const useTwitterAuth = () => {
    */
   const logout = async () => {
     try {
-      await authClient.signOut();
-      clearSessionCache();
+      // Immediately update UI
       setUser(null);
+      clearSessionCache();
+
+      // Sign out from backend (don't wait)
+      authClient.signOut().catch((error) => {
+        console.error('Logout error:', error);
+      });
     } catch (error) {
       console.error('Logout error:', error);
     }

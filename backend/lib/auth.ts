@@ -3,11 +3,13 @@ import { siwe } from "better-auth/plugins";
 import { getPool } from "./db";
 import { generateRandomString } from "better-auth/crypto";
 import { verifyMessage } from "viem";
+import { sendEmail } from "./email";
 
 /**
  * Better Auth Configuration
  *
  * Features:
+ * - Email & Password authentication
  * - Twitter OAuth provider
  * - Google OAuth provider
  * - SIWE (Sign in with Ethereum)
@@ -25,6 +27,45 @@ export const auth = betterAuth({
   trustedOrigins: [
     process.env.TRUSTED_ORIGIN || "http://localhost:3000"
   ],
+
+  // Enable email and password authentication
+  emailAndPassword: {
+    enabled: true,
+    minPasswordLength: 8,
+    maxPasswordLength: 128,
+    // Password reset functionality
+    sendResetPassword: async ({ user, url, token }, request) => {
+      await sendEmail({
+        to: user.email,
+        subject: 'Reset your password',
+        text: `Hello ${user.name || 'there'},
+
+You requested to reset your password. Click the link below to reset it:
+
+${url}
+
+This link will expire in 1 hour.
+
+If you didn't request this, you can safely ignore this email.`,
+        html: `
+          <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+            <h2>Reset Your Password</h2>
+            <p>Hello ${user.name || 'there'},</p>
+            <p>You requested to reset your password. Click the button below to reset it:</p>
+            <p style="margin: 30px 0;">
+              <a href="${url}" style="background-color: #3b82f6; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; display: inline-block;">
+                Reset Password
+              </a>
+            </p>
+            <p style="color: #666; font-size: 14px;">Or copy this link: ${url}</p>
+            <p style="color: #666; font-size: 14px;">This link will expire in 1 hour.</p>
+            <p style="color: #999; font-size: 12px; margin-top: 40px;">If you didn't request this, you can safely ignore this email.</p>
+          </div>
+        `,
+      });
+    },
+    resetPasswordTokenExpiresIn: 3600, // 1 hour
+  },
 
   plugins: [
     siwe({

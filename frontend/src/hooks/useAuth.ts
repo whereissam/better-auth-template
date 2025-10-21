@@ -37,14 +37,21 @@ export const useAuth = () => {
     // 2. We have an address
     // 3. No Better Auth session exists yet
     // 4. Haven't already triggered SIWE for this address
-    if (justConnected && address && !user && !hasTriggeredSIWE.current) {
+    // 5. Not currently loading (to avoid double triggers)
+    if (justConnected && address && !user && !hasTriggeredSIWE.current && !twitter.isLoading) {
       hasTriggeredSIWE.current = true;
       console.log('🔵 Auto-triggering SIWE for newly connected address:', address);
 
-      siwe.signIn().catch((error) => {
-        console.error('Auto SIWE failed:', error);
-        // DON'T reset the flag - user said no retries
-      });
+      // Small delay to ensure wallet is fully ready
+      setTimeout(() => {
+        siwe.signIn().catch((error) => {
+          console.error('Auto SIWE failed:', error);
+          // Reset flag on user rejection/cancel so they can try again manually
+          if (error?.message?.includes('User rejected') || error?.message?.includes('denied')) {
+            hasTriggeredSIWE.current = false;
+          }
+        });
+      }, 300);
     }
 
     // Track connection state for next render
@@ -54,7 +61,7 @@ export const useAuth = () => {
     if (!isConnected || user) {
       hasTriggeredSIWE.current = false;
     }
-  }, [isConnected, address, user]);
+  }, [isConnected, address, user, twitter.isLoading]);
 
   // Login methods
   const loginWithTwitter = twitter.login;

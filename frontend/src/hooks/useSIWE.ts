@@ -91,8 +91,8 @@ export const useSIWE = () => {
 
       console.log('✅ SIWE authentication successful');
 
-      // Reload to update session
-      window.location.reload();
+      // Navigate to homepage to update session
+      window.location.href = window.location.origin;
 
       return verifyRes.data;
     } catch (err: any) {
