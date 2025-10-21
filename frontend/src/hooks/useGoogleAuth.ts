@@ -8,10 +8,10 @@ import { authClient } from '@/lib/auth.client';
  */
 export const useGoogleAuth = () => {
   /**
-   * Login with Google OAuth
+   * Sign in with Google OAuth
    * Redirects to Google authorization page
    */
-  const loginWithGoogle = async () => {
+  const signIn = async () => {
     try {
       await authClient.signIn.social({
         provider: 'google',
@@ -23,5 +23,5 @@ export const useGoogleAuth = () => {
     }
   };
 
-  return { loginWithGoogle };
+  return { signIn };
 };

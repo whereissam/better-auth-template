@@ -1,3 +1,4 @@
+import { useSessionManager } from './useSessionManager';
 import { useTwitterAuth } from './useTwitterAuth';
 import { useGoogleAuth } from './useGoogleAuth';
 import { useSIWE } from './useSIWE';
@@ -7,12 +8,15 @@ import { useEffect, useRef } from 'react';
 /**
  * Unified Auth Hook
  *
- * Combines Twitter, Google OAuth and SIWE authentication
- * Provides a single interface for all auth methods
+ * Combines all authentication methods:
+ * - Email & Password
+ * - OAuth providers (Google, Twitter, etc.)
+ * - SIWE (Sign in with Ethereum)
  *
- * This hook manages all authentication methods through Better Auth
+ * Provides a single interface for all auth methods through Better Auth
  */
 export const useAuth = () => {
+  const session = useSessionManager();
   const twitter = useTwitterAuth();
   const google = useGoogleAuth();
   const siwe = useSIWE();
@@ -20,10 +24,10 @@ export const useAuth = () => {
   const hasTriggeredSIWE = useRef(false);
   const previousConnected = useRef(false);
 
-  // Twitter auth hook handles the session for all OAuth providers
+  // Session manager handles the session for all auth methods
   // (Better Auth manages a unified session)
-  const user = twitter.user;
-  const isLoading = twitter.isLoading;
+  const user = session.user;
+  const isLoading = session.isLoading;
 
   // Get wallet address if connected
   const walletAddress = isConnected ? address : null;
@@ -38,7 +42,7 @@ export const useAuth = () => {
     // 3. No Better Auth session exists yet
     // 4. Haven't already triggered SIWE for this address
     // 5. Not currently loading (to avoid double triggers)
-    if (justConnected && address && !user && !hasTriggeredSIWE.current && !twitter.isLoading) {
+    if (justConnected && address && !user && !hasTriggeredSIWE.current && !session.isLoading) {
       hasTriggeredSIWE.current = true;
       console.log('🔵 Auto-triggering SIWE for newly connected address:', address);
 
@@ -61,15 +65,15 @@ export const useAuth = () => {
     if (!isConnected || user) {
       hasTriggeredSIWE.current = false;
     }
-  }, [isConnected, address, user, twitter.isLoading]);
+  }, [isConnected, address, user, session.isLoading]);
 
-  // Login methods
-  const loginWithTwitter = twitter.login;
-  const loginWithGoogle = google.loginWithGoogle;
-  const loginWithSIWE = siwe.signIn;
+  // All auth methods now use consistent "signIn" naming
+  const signInWithTwitter = twitter.signIn;
+  const signInWithGoogle = google.signIn;
+  const signInWithEthereum = siwe.signIn;
 
-  // Logout uses twitter's logout (which clears the Better Auth session)
-  const logout = twitter.logout;
+  // Logout - shared across all auth methods (clears the Better Auth session)
+  const signOut = session.logout;
 
   return {
     // User info
@@ -77,16 +81,16 @@ export const useAuth = () => {
     isLoading,
     walletAddress,
 
-    // Login methods
-    loginWithTwitter,
-    loginWithGoogle,
-    loginWithSIWE,
+    // Sign in methods - all use consistent naming
+    signInWithTwitter,
+    signInWithGoogle,
+    signInWithEthereum,
 
     // SIWE state
     isSIWELoading: siwe.isLoading,
     isWalletConnected: isConnected,
 
-    // Logout
-    logout,
+    // Sign out - works for all auth methods
+    signOut,
   };
 };
