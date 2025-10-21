@@ -24,9 +24,8 @@ export const useEmailAuth = () => {
         return { success: false, error: result.error };
       }
 
-      // Force immediate session update without full page reload
-      window.location.href = window.location.origin;
-      return { success: true, data: result.data };
+      // After signup, user needs to verify email before they can sign in
+      return { success: true, data: result.data, requiresVerification: true };
     } catch (err) {
       const message = err instanceof Error ? err.message : 'An error occurred';
       setError(message);
@@ -48,12 +47,16 @@ export const useEmailAuth = () => {
       });
 
       if (result.error) {
-        setError(result.error.message || 'Failed to sign in');
+        // Check if error is due to unverified email (403 status)
+        if (result.error.status === 403) {
+          setError('Please verify your email address before signing in. Check your inbox for the verification link.');
+        } else {
+          setError(result.error.message || 'Failed to sign in');
+        }
         return { success: false, error: result.error };
       }
 
-      // Force immediate session update without full page reload
-      window.location.href = window.location.origin;
+      // Successfully signed in - no need to redirect, just return success
       return { success: true, data: result.data };
     } catch (err) {
       const message = err instanceof Error ? err.message : 'An error occurred';

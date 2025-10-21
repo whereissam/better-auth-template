@@ -17,6 +17,7 @@ export const EmailAuthForm = ({ onClose }: EmailAuthFormProps) => {
   const [name, setName] = useState('');
   const [rememberMe, setRememberMe] = useState(true);
   const [showForgotPassword, setShowForgotPassword] = useState(false);
+  const [showVerificationMessage, setShowVerificationMessage] = useState(false);
   const { signIn, signUp, isLoading, error } = useEmailAuth();
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -24,13 +25,16 @@ export const EmailAuthForm = ({ onClose }: EmailAuthFormProps) => {
 
     if (mode === 'signup') {
       const result = await signUp(email, password, name);
-      if (result.success && onClose) {
-        onClose();
+      if (result.success) {
+        // Show verification message instead of closing modal
+        setShowVerificationMessage(true);
       }
     } else {
       const result = await signIn(email, password, rememberMe);
       if (result.success && onClose) {
         onClose();
+        // Refresh the page to show logged-in state
+        window.location.reload();
       }
     }
   };
@@ -41,6 +45,36 @@ export const EmailAuthForm = ({ onClose }: EmailAuthFormProps) => {
     setPassword('');
     setName('');
   };
+
+  // Show verification message after signup
+  if (showVerificationMessage) {
+    return (
+      <div className="w-full text-center py-6">
+        <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
+          <svg className="w-8 h-8 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+          </svg>
+        </div>
+        <h3 className="text-xl font-bold text-gray-900 mb-2">Check your email</h3>
+        <p className="text-gray-600 mb-4">
+          We've sent a verification link to <strong>{email}</strong>
+        </p>
+        <p className="text-sm text-gray-500 mb-6">
+          Click the link in the email to verify your account and sign in.
+        </p>
+        <button
+          onClick={() => {
+            setShowVerificationMessage(false);
+            setMode('signin');
+            setPassword('');
+          }}
+          className="text-blue-600 hover:text-blue-700 font-medium"
+        >
+          Back to sign in
+        </button>
+      </div>
+    );
+  }
 
   return (
     <div className="w-full">

@@ -31,6 +31,7 @@ export const auth = betterAuth({
   // Enable email and password authentication
   emailAndPassword: {
     enabled: true,
+    requireEmailVerification: true, // Require email verification before login
     minPasswordLength: 8,
     maxPasswordLength: 128,
     // Password reset functionality
@@ -65,6 +66,40 @@ If you didn't request this, you can safely ignore this email.`,
       });
     },
     resetPasswordTokenExpiresIn: 3600, // 1 hour
+  },
+
+  // Email verification
+  emailVerification: {
+    sendVerificationEmail: async ({ user, url, token }, request) => {
+      await sendEmail({
+        to: user.email,
+        subject: 'Verify your email address',
+        text: `Hello ${user.name || 'there'},
+
+Welcome! Please verify your email address by clicking the link below:
+
+${url}
+
+This link will expire in 24 hours.
+
+If you didn't create an account, you can safely ignore this email.`,
+        html: `
+          <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+            <h2>Verify Your Email Address</h2>
+            <p>Hello ${user.name || 'there'},</p>
+            <p>Welcome! Please verify your email address by clicking the button below:</p>
+            <p style="margin: 30px 0;">
+              <a href="${url}" style="background-color: #10b981; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; display: inline-block;">
+                Verify Email
+              </a>
+            </p>
+            <p style="color: #666; font-size: 14px;">Or copy this link: ${url}</p>
+            <p style="color: #666; font-size: 14px;">This link will expire in 24 hours.</p>
+            <p style="color: #999; font-size: 12px; margin-top: 40px;">If you didn't create an account, you can safely ignore this email.</p>
+          </div>
+        `,
+      });
+    },
   },
 
   plugins: [
