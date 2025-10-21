@@ -1,0 +1,51 @@
+#:schema node_modules/wrangler/config-schema.json
+name = "better-auth-backend"
+main = "server.ts"
+compatibility_date = "2024-10-21"
+compatibility_flags = ["nodejs_compat"]
+
+# Development
+[env.development]
+name = "better-auth-backend-dev"
+
+# Production
+[env.production]
+name = "better-auth-backend"
+routes = [
+  { pattern = "api.yourdomain.com", custom_domain = true }
+]
+
+# Bindings - PostgreSQL via Hyperdrive
+[[hyperdrive]]
+binding = "DB"
+id = "<your-hyperdrive-id>"  # Get from: wrangler hyperdrive create
+
+# Environment Variables
+[vars]
+NODE_ENV = "production"
+ALLOWED_ORIGINS = "https://yourdomain.com"
+TRUSTED_ORIGIN = "https://yourdomain.com"
+APP_URL = "https://yourdomain.com"
+BETTER_AUTH_URL = "https://api.yourdomain.com"
+RATE_LIMIT_WINDOW_MS = "900000"
+RATE_LIMIT_MAX_REQUESTS = "100"
+
+# Secrets (set via: wrangler secret put <NAME>)
+# - BETTER_AUTH_SECRET
+# - TWITTER_CLIENT_ID
+# - TWITTER_CLIENT_SECRET
+# - GOOGLE_CLIENT_ID
+# - GOOGLE_CLIENT_SECRET
+# - DB_HOST
+# - DB_PORT
+# - DB_USER
+# - DB_PASSWORD
+# - DB_NAME
+
+# Limits
+[limits]
+cpu_ms = 10000  # 10 seconds max CPU time
+
+# Observability
+[observability]
+enabled = true
