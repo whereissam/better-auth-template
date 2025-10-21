@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useNavigate, useSearchParams, Link } from 'react-router-dom';
 import { useEmailAuth } from '@/hooks/useEmailAuth';
 
 /**
@@ -6,6 +7,8 @@ import { useEmailAuth } from '@/hooks/useEmailAuth';
  * Users land here after clicking the reset link in their email
  */
 export const ResetPassword = () => {
+  const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const [token, setToken] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
@@ -15,9 +18,8 @@ export const ResetPassword = () => {
 
   // Extract token from URL on mount
   useEffect(() => {
-    const params = new URLSearchParams(window.location.search);
-    const tokenParam = params.get('token');
-    const errorParam = params.get('error');
+    const tokenParam = searchParams.get('token');
+    const errorParam = searchParams.get('error');
 
     if (errorParam) {
       setLocalError('Invalid or expired reset link. Please request a new one.');
@@ -26,7 +28,7 @@ export const ResetPassword = () => {
     } else {
       setLocalError('No reset token found. Please request a new password reset.');
     }
-  }, []);
+  }, [searchParams]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -54,7 +56,7 @@ export const ResetPassword = () => {
       setIsSuccess(true);
       // Redirect to home after 3 seconds
       setTimeout(() => {
-        window.location.href = window.location.origin;
+        navigate('/');
       }, 3000);
     }
   };
@@ -161,12 +163,12 @@ export const ResetPassword = () => {
               </button>
 
               <div className="text-center pt-4">
-                <a
-                  href={window.location.origin}
+                <Link
+                  to="/"
                   className="text-sm text-gray-600 hover:text-gray-900"
                 >
                   Back to home
-                </a>
+                </Link>
               </div>
             </form>
           </>

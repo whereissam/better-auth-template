@@ -41,7 +41,11 @@
       "Bash(docker logs better-auth-backend --tail 30)",
       "Bash(docker stop better-auth-backend)",
       "Bash(docker exec better-auth-postgres psql -U postgres -d auth_db -c \"SELECT id, \"\"userId\"\", \"\"expiresAt\"\" FROM session ORDER BY \"\"createdAt\"\" DESC LIMIT 3;\")",
-      "Bash(docker exec better-auth-postgres psql -U postgres -d auth_db -c \"SELECT id, email, name FROM \"\"user\"\" WHERE id = ''y89wTEKdlgyswFRYmu8XvdKziPTBhgYB'';\")"
+      "Bash(docker exec better-auth-postgres psql -U postgres -d auth_db -c \"SELECT id, email, name FROM \"\"user\"\" WHERE id = ''y89wTEKdlgyswFRYmu8XvdKziPTBhgYB'';\")",
+      "Bash(bun add react-router-dom)",
+      "Bash(bun add -D @types/react-router-dom)",
+      "Bash(git add -A)",
+      "Bash(git commit -m \"refactor: Replace window.location with React Router Dom\n\n- Install react-router-dom for proper React navigation\n- Refactor App.tsx to use BrowserRouter with Routes\n- Extract HomePage component from App.tsx\n- Update ResetPassword to use useNavigate and useSearchParams\n- Replace window.location.href with navigate(''/'')\n- Replace <a href> with <Link to>\n- Remove manual popstate event listeners\n\nBenefits:\n- Proper React lifecycle integration\n- Client-side navigation (no full page reload)\n- Better TypeScript support\n- URL parameter handling with useSearchParams\n- Cleaner, more maintainable code\")"
     ],
     "deny": [],
     "ask": []
