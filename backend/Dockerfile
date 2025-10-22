@@ -1,22 +1,18 @@
-# Backend Dockerfile
 FROM oven/bun:1 AS base
-
 WORKDIR /app
 
-# Install Python and build dependencies for native modules
-RUN apt-get update && \
-    apt-get install -y python3 python3-pip build-essential && \
-    rm -rf /var/lib/apt/lists/*
-
 # Install dependencies
-COPY package.json ./
-RUN bun install
+COPY package.json bun.lock ./
+RUN bun install --frozen-lockfile --ignore-scripts
 
 # Copy source code
 COPY . .
 
+# Create logs directory
+RUN mkdir -p logs
+
 # Expose port
 EXPOSE 3005
 
-# Start the server
-CMD ["bun", "run", "dev"]
+# Start server
+CMD ["bun", "run", "server.ts"]
