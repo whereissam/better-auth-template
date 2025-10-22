@@ -1,9 +1,9 @@
 import { betterAuth } from "better-auth";
-import { siwe } from "better-auth/plugins";
+import { siwe, emailOTP } from "better-auth/plugins";
 import { getPool } from "./db";
 import { generateRandomString } from "better-auth/crypto";
 import { verifyMessage } from "viem";
-import { sendEmail } from "./email";
+import { sendEmail, sendOTP } from "./email";
 
 /**
  * Better Auth Configuration
@@ -103,6 +103,17 @@ If you didn't create an account, you can safely ignore this email.`,
   },
 
   plugins: [
+    // Email OTP for password reset and email verification
+    emailOTP({
+      async sendVerificationOTP({ email, otp, type }) {
+        await sendOTP({ email, otp, type });
+      },
+      otpLength: 6,
+      expiresIn: 600, // 10 minutes
+      allowedAttempts: 3,
+    }),
+
+    // SIWE (Sign in with Ethereum)
     siwe({
       domain: process.env.SIWE_DOMAIN || "localhost:3000",
       emailDomainName: process.env.SIWE_EMAIL_DOMAIN || "localhost",
