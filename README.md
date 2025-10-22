@@ -5,55 +5,73 @@ Production-ready authentication template with Better Auth, featuring Twitter/Goo
 ## ⚡ Quick Start
 
 ### Prerequisites
-- Bun runtime installed
-- Docker Desktop installed and running
+- **Bun** runtime installed ([https://bun.sh](https://bun.sh))
+- **Docker Desktop** installed and running
 
-### Development Setup
+### One-Command Start (Easiest)
 
-**Option 1: Run Everything Locally (Recommended for Development)**
 ```bash
-# 1. Start database (Docker)
-docker-compose up -d postgres
-
-# 2. Start backend (Terminal 1)
-cd backend
-bun install
-bun run dev
-
-# 3. Start frontend (Terminal 2)
-cd frontend
-bun install
-bun run dev
+# From root directory - starts everything!
+bun run docker:build && bun run dev:local
 ```
 
-**Option 2: Run Backend in Docker**
-```bash
-# Start backend + database in Docker
-docker-compose up -d
-
-# Start frontend locally
-cd frontend
-bun install
-bun run dev
-```
+This will:
+1. Start PostgreSQL database in Docker
+2. Start backend API (locally with hot-reload)
+3. Start frontend dev server (locally with hot-reload)
 
 Visit: **http://localhost:3000** 🚀
 
 ---
 
+### Alternative: Step-by-Step Setup
+
+**Option 1: Backend + Frontend Locally (Best for Development)**
+```bash
+# Terminal 1: Start database only
+bun run db:only
+
+# Terminal 2: Start backend
+cd backend && bun install && bun run dev
+
+# Terminal 3: Start frontend
+cd frontend && bun install && bun run dev
+```
+
+**Option 2: Backend in Docker, Frontend Locally**
+```bash
+# Terminal 1: Start backend + database in Docker
+bun run docker:build
+
+# Terminal 2: Start frontend locally
+cd frontend && bun install && bun run dev
+```
+
+---
+
 ## 🎯 Available Commands
 
-### From Root Directory
+### Root Directory Commands (Recommended)
 
 | Command | Description |
 |---------|-------------|
+| `bun run docker:build` | Build & start Docker services (backend + DB) |
+| `bun run docker:up` | Start Docker services (backend + DB) |
+| `bun run docker:down` | Stop all Docker services |
+| `bun run docker:logs` | View Docker logs |
+| `bun run docker:clean` | Stop & remove all containers + volumes |
+| `bun run db:only` | Start PostgreSQL database only |
+| `bun run dev:local` | Start backend + frontend locally (hot-reload) |
+
+### Direct Docker Commands (Alternative)
+
+| Command | Description |
+|---------|-------------|
+| `docker-compose up -d` | Start backend + database |
 | `docker-compose up -d postgres` | Start database only |
-| `docker-compose up -d` | Start backend + database (Docker) |
-| `docker-compose down` | Stop all Docker services |
-| `docker-compose logs -f` | View Docker logs |
-| `docker-compose ps` | Check Docker status |
-| `bun run dev:local` | Start backend + frontend locally |
-| `bun run db:only` | Start database only |
+| `docker-compose down` | Stop all services |
+| `docker-compose logs -f` | Follow logs |
+| `docker-compose ps` | Check status |
 
 ### From Backend Directory
 
