@@ -29,21 +29,12 @@ services:
     container_name: better-auth-backend
     ports:
       - "3005:3005"
+    env_file:
+      - ./backend/.env
     environment:
+      # Override database settings for Docker network
       - DB_HOST=postgres
       - DB_PORT=5432
-      - DB_USER=postgres
-      - DB_PASSWORD=postgres
-      - DB_NAME=auth_db
-      - PORT=3005
-      - NODE_ENV=development
-      - BETTER_AUTH_SECRET=dev-secret-change-in-production
-      - BETTER_AUTH_URL=http://localhost:3005
-      - ALLOWED_ORIGINS=http://localhost:3000
-      - TRUSTED_ORIGIN=http://localhost:3000
-      - APP_URL=http://localhost:3000
-      - SIWE_DOMAIN=localhost:3000
-      - SIWE_EMAIL_DOMAIN=localhost
     volumes:
       - ./backend:/app
       - /app/node_modules

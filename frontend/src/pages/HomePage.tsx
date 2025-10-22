@@ -1,6 +1,7 @@
 import { LoginButton } from '../components/LoginButton';
 import { useAuth } from '../hooks/useAuth';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { useLocation } from 'react-router-dom';
 
 /**
  * Home Page Component
@@ -8,6 +9,19 @@ import { useState } from 'react';
 export function HomePage() {
   const { user, isLoading } = useAuth();
   const [showLoginModal, setShowLoginModal] = useState(false);
+  const [showVerificationSuccess, setShowVerificationSuccess] = useState(false);
+  const location = useLocation();
+
+  // Check if user just verified their email
+  useEffect(() => {
+    if (location.state?.emailVerified) {
+      setShowVerificationSuccess(true);
+      // Clear the state
+      window.history.replaceState({}, document.title);
+      // Auto-hide after 5 seconds
+      setTimeout(() => setShowVerificationSuccess(false), 5000);
+    }
+  }, [location]);
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -26,6 +40,32 @@ export function HomePage() {
           </div>
         </div>
       </header>
+
+      {/* Email Verification Success Banner */}
+      {showVerificationSuccess && (
+        <div className="bg-green-50 border-b border-green-200">
+          <div className="max-w-7xl mx-auto px-4 py-3 sm:px-6 lg:px-8">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center">
+                <svg className="w-5 h-5 text-green-600 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                </svg>
+                <p className="text-sm font-medium text-green-800">
+                  Email verified successfully! You can now sign in.
+                </p>
+              </div>
+              <button
+                onClick={() => setShowVerificationSuccess(false)}
+                className="text-green-600 hover:text-green-800"
+              >
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Main Content */}
       <main className="max-w-7xl mx-auto px-4 py-12 sm:px-6 lg:px-8">

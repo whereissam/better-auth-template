@@ -1,29 +1,15 @@
 /**
  * Email Service Configuration
  *
- * This file contains email sending utilities for Better Auth.
- *
- * To enable email verification and password reset:
- * 1. Configure an email service (e.g., SendGrid, AWS SES, Resend, etc.)
- * 2. Implement the sendEmail function below
- * 3. Uncomment and configure the email options in auth.ts
- *
- * Example with Resend:
- * ```
- * import { Resend } from 'resend';
- * const resend = new Resend(process.env.RESEND_API_KEY);
- *
- * export async function sendEmail({ to, subject, text, html }: EmailOptions) {
- *   await resend.emails.send({
- *     from: 'noreply@yourdomain.com',
- *     to,
- *     subject,
- *     text,
- *     html,
- *   });
- * }
- * ```
+ * Using Resend for email delivery
  */
+
+import { Resend } from 'resend';
+
+// Initialize Resend client
+const resend = process.env.RESEND_API_KEY
+  ? new Resend(process.env.RESEND_API_KEY)
+  : null;
 
 export interface EmailOptions {
   to: string;
@@ -33,24 +19,39 @@ export interface EmailOptions {
 }
 
 /**
- * Send an email (placeholder implementation)
- * Replace this with your actual email service
+ * Send an email using Resend
  */
 export async function sendEmail(options: EmailOptions): Promise<void> {
-  // TODO: Implement with your email service
-  console.log('📧 Email would be sent:', options);
+  const fromEmail = process.env.RESEND_FROM_EMAIL || 'onboarding@resend.dev';
 
-  // For development, you can log the email to console
+  // Log in development
   if (process.env.NODE_ENV === 'development') {
     console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+    console.log(`📧 Sending email via Resend`);
     console.log(`To: ${options.to}`);
+    console.log(`From: ${fromEmail}`);
     console.log(`Subject: ${options.subject}`);
-    console.log(`Body:\n${options.text}`);
     console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
   }
 
-  // Uncomment when you have an email service configured
-  // throw new Error('Email service not configured. Please implement sendEmail in backend/lib/email.ts');
+  // Send email with Resend
+  if (resend) {
+    try {
+      await resend.emails.send({
+        from: fromEmail,
+        to: options.to,
+        subject: options.subject,
+        text: options.text,
+        html: options.html,
+      });
+      console.log(`✅ Email sent successfully to ${options.to}`);
+    } catch (error) {
+      console.error('❌ Failed to send email:', error);
+      throw error;
+    }
+  } else {
+    console.warn('⚠️  Resend not configured. Email not sent.');
+  }
 }
 
 export interface OTPOptions {
@@ -114,7 +115,7 @@ export async function sendOTP(options: OTPOptions): Promise<void> {
     `,
   };
 
-  // In development, log to console
+  // Log OTP code in development for easy testing
   if (process.env.NODE_ENV === 'development') {
     console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
     console.log(`📨 OTP Email (${type})`);
@@ -124,13 +125,65 @@ export async function sendOTP(options: OTPOptions): Promise<void> {
     console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
   }
 
-  // TODO: In production, send via email service
-  // await sendEmail({
-  //   to: email,
-  //   subject: subjects[type],
-  //   text: messages[type],
-  //   html: htmlMessages[type],
-  // });
+  // Send email via Resend
+  await sendEmail({
+    to: email,
+    subject: subjects[type],
+    text: messages[type],
+    html: htmlMessages[type],
+  });
+}
+
+export interface MagicLinkOptions {
+  email: string;
+  url: string;
+  token: string;
+}
+
+/**
+ * Send a magic link email
+ */
+export async function sendMagicLinkEmail(options: MagicLinkOptions): Promise<void> {
+  const { email, url, token } = options;
+
+  const subject = 'Sign in to your account';
+
+  const text = `Click the link below to sign in to your account:\n\n${url}\n\nThis link will expire in 5 minutes.\n\nIf you didn't request this link, please ignore this email.`;
+
+  const html = `
+    <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+      <h2>Sign In to Your Account</h2>
+      <p>Click the button below to sign in:</p>
+      <div style="margin: 30px 0;">
+        <a href="${url}" style="background-color: #3b82f6; color: white; padding: 12px 32px; text-decoration: none; border-radius: 6px; display: inline-block; font-weight: 500;">
+          Sign In
+        </a>
+      </div>
+      <p style="color: #666; font-size: 14px;">Or copy this link:</p>
+      <p style="background-color: #f3f4f6; padding: 12px; border-radius: 6px; word-break: break-all; font-size: 12px; color: #1f2937;">
+        ${url}
+      </p>
+      <p style="color: #666; font-size: 14px; margin-top: 20px;">This link will expire in 5 minutes.</p>
+      <p style="color: #999; font-size: 12px; margin-top: 40px;">If you didn't request this link, please ignore this email.</p>
+    </div>
+  `;
+
+  // Log magic link in development for easy testing
+  if (process.env.NODE_ENV === 'development') {
+    console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+    console.log(`🔗 Magic Link Email`);
+    console.log(`To: ${email}`);
+    console.log(`\n🔐 MAGIC LINK:\n${url}\n`);
+    console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+  }
+
+  // Send email via Resend
+  await sendEmail({
+    to: email,
+    subject,
+    text,
+    html,
+  });
 }
 
 /**

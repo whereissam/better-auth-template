@@ -1,5 +1,5 @@
 import { createAuthClient } from "better-auth/react";
-import { siweClient, emailOTPClient } from "better-auth/client/plugins";
+import { siweClient, emailOTPClient, magicLinkClient } from "better-auth/client/plugins";
 
 /**
  * Better Auth React Client
@@ -11,11 +11,12 @@ import { siweClient, emailOTPClient } from "better-auth/client/plugins";
  * - credentials: "include" ensures cookies are sent with requests
  * - SIWE plugin for Ethereum wallet authentication
  * - Email OTP plugin for OTP-based authentication
+ * - Magic Link plugin for passwordless authentication
  */
 export const authClient = createAuthClient({
   baseURL: typeof window !== 'undefined' ? window.location.origin : '',
   fetchOptions: {
     credentials: "include",
   },
-  plugins: [siweClient(), emailOTPClient()],
+  plugins: [siweClient(), emailOTPClient(), magicLinkClient()],
 });

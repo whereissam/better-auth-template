@@ -50,6 +50,7 @@ export const useEmailAuth = () => {
         // Check if error is due to unverified email (403 status)
         if (result.error.status === 403) {
           setError('Please verify your email address before signing in. Check your inbox for the verification link.');
+          return { success: false, error: result.error, needsVerification: true };
         } else {
           setError(result.error.message || 'Failed to sign in');
         }
@@ -117,6 +118,8 @@ export const useEmailAuth = () => {
     }
   };
 
+  const clearError = () => setError(null);
+
   return {
     signUp,
     signIn,
@@ -124,5 +127,6 @@ export const useEmailAuth = () => {
     resetPassword,
     isLoading,
     error,
+    clearError,
   };
 };

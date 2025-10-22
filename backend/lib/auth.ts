@@ -1,9 +1,9 @@
 import { betterAuth } from "better-auth";
-import { siwe, emailOTP } from "better-auth/plugins";
+import { siwe, emailOTP, magicLink } from "better-auth/plugins";
 import { getPool } from "./db";
 import { generateRandomString } from "better-auth/crypto";
 import { verifyMessage } from "viem";
-import { sendEmail, sendOTP } from "./email";
+import { sendEmail, sendOTP, sendMagicLinkEmail } from "./email";
 
 /**
  * Better Auth Configuration
@@ -71,6 +71,10 @@ If you didn't request this, you can safely ignore this email.`,
   // Email verification
   emailVerification: {
     sendVerificationEmail: async ({ user, url, token }, request) => {
+      // Modify the URL to redirect to our custom verify-email page
+      const callbackUrl = `${process.env.APP_URL || "http://localhost:3000"}/verify-email?verified=true`;
+      const verificationUrl = `${url}&callbackURL=${encodeURIComponent(callbackUrl)}`;
+
       await sendEmail({
         to: user.email,
         subject: 'Verify your email address',
@@ -78,7 +82,7 @@ If you didn't request this, you can safely ignore this email.`,
 
 Welcome! Please verify your email address by clicking the link below:
 
-${url}
+${verificationUrl}
 
 This link will expire in 24 hours.
 
@@ -89,11 +93,11 @@ If you didn't create an account, you can safely ignore this email.`,
             <p>Hello ${user.name || 'there'},</p>
             <p>Welcome! Please verify your email address by clicking the button below:</p>
             <p style="margin: 30px 0;">
-              <a href="${url}" style="background-color: #10b981; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; display: inline-block;">
+              <a href="${verificationUrl}" style="background-color: #10b981; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; display: inline-block;">
                 Verify Email
               </a>
             </p>
-            <p style="color: #666; font-size: 14px;">Or copy this link: ${url}</p>
+            <p style="color: #666; font-size: 14px;">Or copy this link: ${verificationUrl}</p>
             <p style="color: #666; font-size: 14px;">This link will expire in 24 hours.</p>
             <p style="color: #999; font-size: 12px; margin-top: 40px;">If you didn't create an account, you can safely ignore this email.</p>
           </div>
@@ -103,6 +107,14 @@ If you didn't create an account, you can safely ignore this email.`,
   },
 
   plugins: [
+    // Magic Link for passwordless authentication
+    magicLink({
+      async sendMagicLink({ email, token, url }, request) {
+        await sendMagicLinkEmail({ email, url, token });
+      },
+      expiresIn: 300, // 5 minutes
+    }),
+
     // Email OTP for password reset and email verification
     emailOTP({
       async sendVerificationOTP({ email, otp, type }) {
