@@ -8,7 +8,7 @@ import { getDefaultConfig } from '@rainbow-me/rainbowkit';
  */
 export const wagmiConfig = getDefaultConfig({
   appName: 'Better Auth Template',
-  projectId: 'YOUR_PROJECT_ID', // Get from https://cloud.walletconnect.com
+  projectId: import.meta.env.VITE_WALLETCONNECT_PROJECT_ID,
   chains: [mainnet],
   transports: {
     [mainnet.id]: http(),

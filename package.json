@@ -12,7 +12,10 @@
     "docker:clean": "docker-compose down -v",
     "db:only": "docker-compose up -d postgres",
     "dev:local": "concurrently \"cd backend && bun run dev\" \"cd frontend && bun run dev\"",
-    "check:docker": "docker ps > /dev/null 2>&1 || (echo '❌ Docker is not running! Please start Docker Desktop first.' && exit 1)"
+    "check:docker": "docker ps > /dev/null 2>&1 || (echo '❌ Docker is not running! Please start Docker Desktop first.' && exit 1)",
+    "test": "concurrently \"cd frontend && bun run test:run\" \"cd backend && bun run test:run\"",
+    "test:frontend": "cd frontend && bun run test:run",
+    "test:backend": "cd backend && bun run test:run"
   },
   "devDependencies": {
     "concurrently": "^9.2.1"

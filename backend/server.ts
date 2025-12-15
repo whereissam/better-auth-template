@@ -8,7 +8,6 @@ import { rateLimit } from 'express-rate-limit';
 import { auth } from './lib/auth';
 import { testConnection } from './lib/db';
 import { logger } from './lib/logger';
-import siweRouter from './routes/siwe';
 
 const app = express();
 const PORT = process.env.PORT || 3005;
@@ -49,9 +48,6 @@ const limiter = rateLimit({
 });
 
 app.use('/api/', limiter);
-
-// SIWE routes
-app.use('/api/siwe', siweRouter);
 
 /**
  * Better Auth Handler
