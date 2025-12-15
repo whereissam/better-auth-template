@@ -4,7 +4,7 @@ This project uses a **centralized authentication approach** with the `useAuth` h
 
 ## Unified Auth Hook
 
-All authentication methods (Google, Twitter, SIWE) are handled through a single hook:
+All authentication methods (Google, Twitter, SIWE, Passkey) are handled through a single hook:
 
 ```tsx
 import { useAuth } from '@/hooks/useAuth';
@@ -90,7 +90,55 @@ return (
 );
 ```
 
-### 4. Logout (works for all methods)
+### 4. Passkey (WebAuthn)
+Passkeys provide passwordless authentication using biometrics or device PIN.
+
+#### Sign In with Passkey
+```tsx
+import { PasskeyAuth } from '@/components/PasskeyAuth';
+
+// In your login modal
+<PasskeyAuth
+  mode="signin"
+  onSuccess={() => {
+    // Handle successful sign in
+    window.location.reload();
+  }}
+/>
+```
+
+#### Register a Passkey (User must be signed in)
+```tsx
+import { authClient } from '@/lib/auth.client';
+
+// Register a new passkey
+const handleRegisterPasskey = async () => {
+  const result = await authClient.passkey.addPasskey({
+    name: 'My MacBook', // Optional name for the passkey
+  });
+
+  if (result.error) {
+    console.error('Failed to register passkey:', result.error);
+  } else {
+    console.log('Passkey registered successfully!');
+  }
+};
+```
+
+#### Manage Passkeys
+```tsx
+import { PasskeyManager } from '@/components/PasskeyAuth';
+
+// In your settings/profile page
+<PasskeyManager />
+```
+
+This component allows users to:
+- View all registered passkeys
+- Add new passkeys
+- Delete existing passkeys
+
+### 5. Logout (works for all methods)
 ```tsx
 const { logout } = useAuth();
 

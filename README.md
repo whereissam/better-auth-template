@@ -9,6 +9,7 @@ A production-ready authentication starter kit built with [Better Auth](https://b
 - **Password Reset** - Via 6-digit OTP or Magic Link
 - **Social OAuth** - Twitter/X and Google integration
 - **Web3 (SIWE)** - Sign-In With Ethereum wallet authentication
+- **Passkey (WebAuthn)** - Passwordless auth with biometrics or device PIN
 - **Account Linking** - Connect multiple auth methods to one account
 
 ### Developer Experience

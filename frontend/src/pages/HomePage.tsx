@@ -1,4 +1,5 @@
 import { LoginButton } from '../components/LoginButton';
+import { PasskeyManager } from '../components/PasskeyAuth';
 import { useAuth } from '../hooks/useAuth';
 import { useState, useEffect } from 'react';
 import { useLocation } from 'react-router-dom';
@@ -10,6 +11,7 @@ export function HomePage() {
   const { user, isLoading } = useAuth();
   const [showLoginModal, setShowLoginModal] = useState(false);
   const [showVerificationSuccess, setShowVerificationSuccess] = useState(false);
+  const [showPasskeyModal, setShowPasskeyModal] = useState(false);
   const location = useLocation();
 
   // Check if user just verified their email
@@ -132,6 +134,17 @@ export function HomePage() {
                 ID: {user.id.slice(0, 8)}...{user.id.slice(-8)}
               </p>
             )}
+
+            {/* Manage Passkeys Button */}
+            <button
+              onClick={() => setShowPasskeyModal(true)}
+              className="mt-6 inline-flex items-center px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 font-medium rounded-lg transition-colors"
+            >
+              <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 11c0 3.517-1.009 6.799-2.753 9.571m-3.44-2.04l.054-.09A13.916 13.916 0 008 11a4 4 0 118 0c0 1.017-.07 2.019-.203 3m-2.118 6.844A21.88 21.88 0 0015.171 17m3.839 1.132c.645-2.266.99-4.659.99-7.132A8 8 0 008 4.07M3 15.364c.64-1.319 1-2.8 1-4.364 0-1.457.39-2.823 1.07-4" />
+              </svg>
+              Manage Passkeys
+            </button>
           </div>
         ) : (
           <div className="text-center py-12">
@@ -189,6 +202,30 @@ export function HomePage() {
           </div>
         </div>
       </main>
+
+      {/* Passkey Management Modal */}
+      {showPasskeyModal && (
+        <div
+          className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50"
+          onClick={() => setShowPasskeyModal(false)}
+        >
+          <div
+            className="bg-white rounded-2xl p-6 w-full max-w-md mx-4 shadow-xl"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex justify-between items-center mb-4">
+              <h2 className="text-xl font-bold text-gray-900">Manage Passkeys</h2>
+              <button
+                onClick={() => setShowPasskeyModal(false)}
+                className="text-gray-400 hover:text-gray-600 text-2xl leading-none"
+              >
+                &times;
+              </button>
+            </div>
+            <PasskeyManager />
+          </div>
+        </div>
+      )}
     </div>
   );
 }

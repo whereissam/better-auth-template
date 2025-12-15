@@ -139,6 +139,50 @@ User                Frontend              Backend            Blockchain
   │  Logged in ✅      │                     │                    │
 ```
 
+### 3. Passkey (WebAuthn) Flow
+
+```
+User                Frontend              Backend              Authenticator
+  │                    │                     │                    │
+  │  Click "Sign In    │                     │                    │
+  │  with Passkey"     │                     │                    │
+  ├───────────────────►│                     │                    │
+  │                    │                     │                    │
+  │                    │ POST /api/auth/     │                    │
+  │                    │ passkey/generate-   │                    │
+  │                    │ authenticate-opts   │                    │
+  │                    ├────────────────────►│                    │
+  │                    │                     │                    │
+  │                    │  Challenge options  │                    │
+  │                    │◄────────────────────┤                    │
+  │                    │                     │                    │
+  │  Biometric/PIN     │  WebAuthn API       │                    │
+  │  prompt            │  creates assertion  │                    │
+  │◄───────────────────┼─────────────────────┼───────────────────►│
+  │                    │                     │                    │
+  │  Authenticate      │                     │                    │
+  ├───────────────────►│                     │                    │
+  │                    │                     │  Signed assertion  │
+  │                    │◄────────────────────┼────────────────────┤
+  │                    │                     │                    │
+  │                    │ POST /api/auth/     │                    │
+  │                    │ signin-passkey      │                    │
+  │                    │ { credential }      │                    │
+  │                    ├────────────────────►│                    │
+  │                    │                     │                    │
+  │                    │                     │ Verify signature   │
+  │                    │                     │ against stored     │
+  │                    │                     │ public key         │
+  │                    │                     │                    │
+  │                    │                     │ Create session     │
+  │                    │                     │                    │
+  │                    │ Set-Cookie:         │                    │
+  │                    │ session_token       │                    │
+  │◄───────────────────┴─────────────────────┤                    │
+  │                    │                     │                    │
+  │  Logged in ✅      │                     │                    │
+```
+
 ## Key Components
 
 ### Frontend
@@ -166,6 +210,15 @@ User                Frontend              Backend            Blockchain
 - Sends signature to backend for verification
 - Compatible with Better Auth sessions
 
+#### 4. **PasskeyAuth** (`frontend/src/components/PasskeyAuth.tsx`)
+- React component for passkey authentication
+- Features:
+  - Sign in with existing passkeys
+  - Register new passkeys (when authenticated)
+  - List and manage passkeys
+  - Browser support detection
+- Uses WebAuthn API via Better Auth passkey client
+
 ### Backend
 
 #### 1. **Better Auth Handler** (`backend/server.ts`)
@@ -176,6 +229,7 @@ User                Frontend              Backend            Blockchain
   - `/api/auth/session` - Get session
   - `/api/auth/signout` - Logout
   - `/api/auth/list-accounts` - List linked accounts
+  - `/api/auth/passkey/*` - Passkey operations
 - Manages proxy headers (`x-forwarded-host`, `x-forwarded-proto`)
 - Sets cookies correctly for same-domain requests
 
@@ -194,6 +248,7 @@ User                Frontend              Backend            Blockchain
   - `user` - User profiles
   - `session` - Sessions with tokens
   - `account` - Linked social accounts
+  - `passkey` - Registered passkeys (WebAuthn credentials)
 
 ## Security Features
 

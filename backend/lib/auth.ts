@@ -1,5 +1,6 @@
 import { betterAuth } from "better-auth";
 import { siwe, emailOTP, magicLink } from "better-auth/plugins";
+import { passkey } from "@better-auth/passkey";
 import { getPool } from "./db";
 import { generateRandomString } from "better-auth/crypto";
 import { verifyMessage } from "viem";
@@ -13,6 +14,7 @@ import { sendEmail, sendOTP, sendMagicLinkEmail } from "./email";
  * - Twitter OAuth provider
  * - Google OAuth provider
  * - SIWE (Sign in with Ethereum)
+ * - Passkey (WebAuthn) authentication
  * - PostgreSQL database for user/session storage
  * - Trusted origins for CORS
  * - Secure cookies in production
@@ -147,6 +149,22 @@ If you didn't create an account, you can safely ignore this email.`,
           console.error("SIWE verification failed:", error);
           return false;
         }
+      },
+    }),
+
+    // Passkey (WebAuthn) authentication
+    passkey({
+      rpID: process.env.PASSKEY_RP_ID || "localhost",
+      rpName: process.env.PASSKEY_RP_NAME || "Better Auth Template",
+      origin: process.env.PASSKEY_ORIGIN || "http://localhost:3000",
+      // Allow platform or cross-platform authenticators
+      authenticatorSelection: {
+        // Allow both platform (TouchID, FaceID) and cross-platform (security keys)
+        authenticatorAttachment: undefined,
+        // Discoverable credential (passkey) preferred but not required
+        residentKey: "preferred",
+        // User verification preferred but allow fallback if not available (e.g., clamshell mode)
+        userVerification: "preferred",
       },
     }),
   ],

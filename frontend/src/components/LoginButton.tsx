@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import { ConnectButton } from '@rainbow-me/rainbowkit';
 import { EmailAuthForm } from './EmailAuthForm';
+import { PasskeyAuth } from './PasskeyAuth';
 
 interface LoginButtonProps {
   onShowModal?: () => void;
@@ -105,6 +106,7 @@ const AuthModal = ({ onClose }: AuthModalProps) => {
   const enableGoogleAuth = import.meta.env.VITE_ENABLE_GOOGLE_AUTH !== 'false';
   const enableTwitterAuth = import.meta.env.VITE_ENABLE_TWITTER_AUTH !== 'false';
   const enableSiwe = import.meta.env.VITE_ENABLE_SIWE !== 'false';
+  const enablePasskey = import.meta.env.VITE_ENABLE_PASSKEY !== 'false';
 
   return (
     <div
@@ -231,6 +233,17 @@ const AuthModal = ({ onClose }: AuthModalProps) => {
                 );
               }}
             </ConnectButton.Custom>
+          )}
+
+          {/* Passkey Authentication */}
+          {enablePasskey && (
+            <PasskeyAuth
+              mode="signin"
+              onSuccess={() => {
+                onClose();
+                window.location.reload();
+              }}
+            />
           )}
 
             <p className="text-xs text-gray-500 text-center mt-6">
