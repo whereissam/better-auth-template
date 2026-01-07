@@ -7,7 +7,7 @@ import { useState } from 'react';
  * Simple button to trigger Google OAuth login
  */
 export const GoogleLoginButton = () => {
-  const { loginWithGoogle } = useGoogleAuth();
+  const { signIn: loginWithGoogle } = useGoogleAuth();
   const [isLoading, setIsLoading] = useState(false);
 
   const handleLogin = async () => {

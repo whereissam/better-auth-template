@@ -19,9 +19,8 @@ export const PasskeyAuth = ({ onSuccess, mode = 'both' }: PasskeyAuthProps) => {
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
 
-  // Check if browser supports WebAuthn and Conditional UI
+  // Check if browser supports WebAuthn
   const [supportsPasskey, setSupportsPasskey] = useState(false);
-  const [supportsConditionalUI, setSupportsConditionalUI] = useState(false);
 
   useEffect(() => {
     const checkSupport = async () => {
@@ -31,11 +30,6 @@ export const PasskeyAuth = ({ onSuccess, mode = 'both' }: PasskeyAuthProps) => {
           const platformAvailable = await PublicKeyCredential.isUserVerifyingPlatformAuthenticatorAvailable();
           setSupportsPasskey(platformAvailable);
 
-          // Check Conditional UI support (for autofill)
-          if (typeof PublicKeyCredential.isConditionalMediationAvailable === 'function') {
-            const conditionalAvailable = await PublicKeyCredential.isConditionalMediationAvailable();
-            setSupportsConditionalUI(conditionalAvailable);
-          }
         } catch {
           setSupportsPasskey(false);
         }
@@ -116,15 +110,13 @@ export const PasskeyAuth = ({ onSuccess, mode = 'both' }: PasskeyAuthProps) => {
   );
 };
 
-interface PasskeyManagerProps {
-  userId?: string;
-}
+interface PasskeyManagerProps {}
 
 /**
  * Passkey Manager Component
  * For managing passkeys when user is already authenticated
  */
-export const PasskeyManager = ({ userId }: PasskeyManagerProps) => {
+export const PasskeyManager = ({}: PasskeyManagerProps) => {
   const [passkeys, setPasskeys] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [isRegistering, setIsRegistering] = useState(false);

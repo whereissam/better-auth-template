@@ -1,4 +1,4 @@
-import { http, createConfig } from 'wagmi';
+import { http } from 'wagmi';
 import { mainnet } from 'wagmi/chains';
 import { getDefaultConfig } from '@rainbow-me/rainbowkit';
 

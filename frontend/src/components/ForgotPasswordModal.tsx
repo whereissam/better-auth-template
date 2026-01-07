@@ -26,8 +26,9 @@ export const ForgotPasswordModal = ({ onClose }: ForgotPasswordModalProps) => {
 
     try {
       // Send OTP using the emailOTP plugin
-      const result = await authClient.forgetPassword.emailOtp({
+      const result = await authClient.emailOtp.sendVerificationOtp({
         email,
+        type: 'forget-password',
       });
 
       if (result.error) {
@@ -129,7 +130,7 @@ export const ForgotPasswordModal = ({ onClose }: ForgotPasswordModalProps) => {
     setOtp('');
 
     try {
-      const result = await authClient.forgetPassword.emailOtp({ email });
+      const result = await authClient.emailOtp.sendVerificationOtp({ email, type: 'forget-password' });
 
       if (result.error) {
         setError(result.error.message || 'Failed to resend code');
