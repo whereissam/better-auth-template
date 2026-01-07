@@ -29,7 +29,7 @@ A production-ready authentication starter kit built with [Better Auth](https://b
 
 ```bash
 # Clone the repository
-git clone https://github.com/your-username/better-auth-template.git
+git clone https://github.com/whereissam/better-auth-template.git
 cd better-auth-template
 
 # Start backend services (PostgreSQL + API)
@@ -178,22 +178,44 @@ better-auth-template/
 ## Tech Stack
 
 ### Frontend
-- React 18, TypeScript, Vite
-- Tailwind CSS
-- React Router v6
-- Wagmi + Viem + RainbowKit (Web3)
+| Technology | Version | Description |
+|------------|---------|-------------|
+| [React](https://react.dev) | 19 | UI library with latest features |
+| [TypeScript](https://www.typescriptlang.org) | 5.8 | Type-safe JavaScript |
+| [Vite](https://vitejs.dev) | 6 | Fast build tool & dev server |
+| [Tailwind CSS](https://tailwindcss.com) | 3.4 | Utility-first CSS framework |
+| [React Router](https://reactrouter.com) | 7 | Client-side routing |
+| [TanStack Query](https://tanstack.com/query) | 5 | Server state management |
+| [Wagmi](https://wagmi.sh) | 2 | React hooks for Ethereum |
+| [Viem](https://viem.sh) | 2 | TypeScript Ethereum library |
+| [RainbowKit](https://www.rainbowkit.com) | 2 | Wallet connection UI |
+| [Vitest](https://vitest.dev) | 4 | Unit testing framework |
 
 ### Backend
-- Bun runtime
-- Express, TypeScript
-- Better Auth
-- Kysely (SQL query builder)
-- Resend (email)
+| Technology | Version | Description |
+|------------|---------|-------------|
+| [Bun](https://bun.sh) | Latest | Fast JavaScript runtime |
+| [Express](https://expressjs.com) | 5 | Web framework |
+| [TypeScript](https://www.typescriptlang.org) | 5.8 | Type-safe JavaScript |
+| [Better Auth](https://better-auth.com) | 1.4 | Authentication framework |
+| [PostgreSQL](https://www.postgresql.org) | 14 | Relational database |
+| [Resend](https://resend.com) | 6 | Email delivery service |
+| [Winston](https://github.com/winstonjs/winston) | 3 | Logging library |
+| [Helmet](https://helmetjs.github.io) | 8 | Security middleware |
+
+### Web3 / Blockchain
+| Technology | Description |
+|------------|-------------|
+| [SIWE](https://login.xyz) | Sign-In With Ethereum standard |
+| [WebAuthn](https://webauthn.io) | Passkey/biometric authentication |
+| EIP-4361 | Ethereum authentication message format |
 
 ### Infrastructure
-- PostgreSQL 14
-- Docker + Docker Compose
-- PgAdmin 4
+| Technology | Description |
+|------------|-------------|
+| [Docker](https://www.docker.com) | Container platform |
+| [Docker Compose](https://docs.docker.com/compose) | Multi-container orchestration |
+| [PgAdmin](https://www.pgadmin.org) | PostgreSQL admin interface |
 
 ## Troubleshooting
 
