@@ -6,7 +6,7 @@ import hpp from 'hpp';
 import morgan from 'morgan';
 import { rateLimit } from 'express-rate-limit';
 import { auth } from './lib/auth';
-import { testConnection } from './lib/db';
+import { testConnection, closePool } from './lib/db';
 import { logger } from './lib/logger';
 
 const app = express();
@@ -23,7 +23,7 @@ app.use(helmet({
 app.use(hpp());
 
 // CORS configuration
-const allowedOrigins = (process.env.ALLOWED_ORIGINS || "http://localhost:3000").split(',');
+const allowedOrigins = (process.env.ALLOWED_ORIGINS || "http://localhost:3000").split(',').map(o => o.trim());
 app.use(cors({
   origin: allowedOrigins,
   credentials: true,
@@ -95,7 +95,9 @@ app.use('/api/auth', async (req, res, next) => {
     const webRequest = new Request(url, {
       method: req.method,
       headers,
-      body: req.method !== 'GET' && req.method !== 'HEAD' ? JSON.stringify(req.body) : undefined,
+      body: req.method !== 'GET' && req.method !== 'HEAD' && req.body
+        ? (typeof req.body === 'string' ? req.body : JSON.stringify(req.body))
+        : undefined,
     });
 
     // Call Better Auth
@@ -150,7 +152,8 @@ app.get('/health', (req, res) => {
 // Error handling
 app.use((err: any, req: express.Request, res: express.Response, next: express.NextFunction) => {
   logger.error('Unhandled error:', err);
-  res.status(500).json({ error: 'Internal server error' });
+  const statusCode = res.statusCode && res.statusCode >= 400 ? res.statusCode : 500;
+  res.status(statusCode).json({ error: statusCode === 500 ? 'Internal server error' : err.message || 'Error' });
 });
 
 // Start server
@@ -173,12 +176,14 @@ const startServer = async () => {
 startServer();
 
 // Graceful shutdown
-process.on('SIGTERM', () => {
+process.on('SIGTERM', async () => {
   logger.info('SIGTERM received, shutting down gracefully...');
+  await closePool();
   process.exit(0);
 });
 
-process.on('SIGINT', () => {
+process.on('SIGINT', async () => {
   logger.info('SIGINT received, shutting down gracefully...');
+  await closePool();
   process.exit(0);
 });

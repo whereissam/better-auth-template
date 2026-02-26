@@ -50,7 +50,10 @@ export async function sendEmail(options: EmailOptions): Promise<void> {
       throw error;
     }
   } else {
-    console.warn('⚠️  Resend not configured. Email not sent.');
+    if (process.env.NODE_ENV === 'production') {
+      throw new Error('Email service not configured: RESEND_API_KEY is missing');
+    }
+    console.warn('⚠️  Resend not configured. Email not sent. Set RESEND_API_KEY to enable.');
   }
 }
 

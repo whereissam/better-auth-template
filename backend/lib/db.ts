@@ -50,10 +50,19 @@ export const testConnection = async () => {
       retries--;
       if (retries === 0) {
         console.error('❌ Failed to connect to database:', error);
+        await closePool();
         throw error;
       }
       console.log(`⏳ Waiting for database... (${retries} retries left)`);
       await new Promise(resolve => setTimeout(resolve, 2000));
     }
+  }
+};
+
+export const closePool = async () => {
+  if (pool) {
+    await pool.end();
+    pool = null;
+    console.log('Database pool closed');
   }
 };

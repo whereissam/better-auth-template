@@ -23,6 +23,8 @@ import { sendEmail, sendOTP, sendMagicLinkEmail } from "./email";
 export const auth = betterAuth({
   database: getPool(),
 
+  secret: process.env.BETTER_AUTH_SECRET,
+
   // BaseURL for Better Auth
   baseURL: process.env.BETTER_AUTH_URL || "http://localhost:3005",
 
@@ -182,16 +184,20 @@ If you didn't create an account, you can safely ignore this email.`,
   },
 
   socialProviders: {
-    twitter: {
-      clientId: process.env.TWITTER_CLIENT_ID || "",
-      clientSecret: process.env.TWITTER_CLIENT_SECRET || "",
-      redirectURI: `${process.env.APP_URL || "http://localhost:3000"}/api/auth/callback/twitter`,
-    },
-    google: {
-      clientId: process.env.GOOGLE_CLIENT_ID || "",
-      clientSecret: process.env.GOOGLE_CLIENT_SECRET || "",
-      redirectURI: `${process.env.APP_URL || "http://localhost:3000"}/api/auth/callback/google`,
-    },
+    ...(process.env.TWITTER_CLIENT_ID && process.env.TWITTER_CLIENT_SECRET ? {
+      twitter: {
+        clientId: process.env.TWITTER_CLIENT_ID,
+        clientSecret: process.env.TWITTER_CLIENT_SECRET,
+        redirectURI: `${process.env.BETTER_AUTH_URL || "http://localhost:3005"}/api/auth/callback/twitter`,
+      },
+    } : {}),
+    ...(process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET ? {
+      google: {
+        clientId: process.env.GOOGLE_CLIENT_ID,
+        clientSecret: process.env.GOOGLE_CLIENT_SECRET,
+        redirectURI: `${process.env.BETTER_AUTH_URL || "http://localhost:3005"}/api/auth/callback/google`,
+      },
+    } : {}),
   },
 
   advanced: {
