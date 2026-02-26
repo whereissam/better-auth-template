@@ -206,7 +206,7 @@ export function HomePage() {
       {/* Passkey Management Modal */}
       {showPasskeyModal && (
         <div
-          className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50"
+          className="fixed inset-0 bg-black/50 flex items-center justify-center z-50"
           onClick={() => setShowPasskeyModal(false)}
         >
           <div
