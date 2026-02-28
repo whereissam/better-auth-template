@@ -4,7 +4,7 @@ This project uses a **centralized authentication approach** with the `useAuth` h
 
 ## Unified Auth Hook
 
-All authentication methods (Google, Twitter, SIWE, Passkey) are handled through a single hook:
+All authentication methods are handled through a single hook:
 
 ```tsx
 import { useAuth } from '@/hooks/useAuth';
@@ -19,14 +19,7 @@ function MyComponent() {
     // Login methods
     loginWithGoogle,
     loginWithTwitter,
-    connectWallet,
-    loginWithSIWE,
     logout,
-
-    // Wallet state (for SIWE)
-    isWalletConnected,
-    walletAddress,
-    isSIWELoading,
   } = useAuth();
 
   return (
@@ -49,7 +42,25 @@ function MyComponent() {
 
 ## Authentication Methods
 
-### 1. Google OAuth
+### 1. Email & Password
+```tsx
+import { authClient } from '@/lib/auth.client';
+
+// Sign up
+await authClient.signUp.email({
+  email: "user@example.com",
+  password: "password123",
+  name: "Test User",
+});
+
+// Sign in
+await authClient.signIn.email({
+  email: "user@example.com",
+  password: "password123",
+});
+```
+
+### 2. Google OAuth
 ```tsx
 const { loginWithGoogle } = useAuth();
 
@@ -58,7 +69,7 @@ const { loginWithGoogle } = useAuth();
 </button>
 ```
 
-### 2. Twitter/X OAuth
+### 3. Twitter/X OAuth
 ```tsx
 const { loginWithTwitter } = useAuth();
 
@@ -67,78 +78,34 @@ const { loginWithTwitter } = useAuth();
 </button>
 ```
 
-### 3. SIWE (Sign-In with Ethereum)
-```tsx
-const {
-  connectWallet,
-  loginWithSIWE,
-  isWalletConnected,
-  walletAddress,
-  isSIWELoading
-} = useAuth();
-
-// Step 1: Connect wallet
-if (!isWalletConnected) {
-  return <button onClick={connectWallet}>Connect Wallet</button>;
-}
-
-// Step 2: Sign in with connected wallet
-return (
-  <button onClick={loginWithSIWE} disabled={isSIWELoading}>
-    Sign in with Ethereum
-  </button>
-);
-```
-
-### 4. Passkey (WebAuthn)
-Passkeys provide passwordless authentication using biometrics or device PIN.
-
-#### Sign In with Passkey
-```tsx
-import { PasskeyAuth } from '@/components/PasskeyAuth';
-
-// In your login modal
-<PasskeyAuth
-  mode="signin"
-  onSuccess={() => {
-    // Handle successful sign in
-    window.location.reload();
-  }}
-/>
-```
-
-#### Register a Passkey (User must be signed in)
+### 4. Magic Link
 ```tsx
 import { authClient } from '@/lib/auth.client';
 
-// Register a new passkey
-const handleRegisterPasskey = async () => {
-  const result = await authClient.passkey.addPasskey({
-    name: 'My MacBook', // Optional name for the passkey
-  });
-
-  if (result.error) {
-    console.error('Failed to register passkey:', result.error);
-  } else {
-    console.log('Passkey registered successfully!');
-  }
-};
+await authClient.signIn.magicLink({
+  email: "user@example.com",
+});
+// User receives email with sign-in link
 ```
 
-#### Manage Passkeys
+### 5. Email OTP
 ```tsx
-import { PasskeyManager } from '@/components/PasskeyAuth';
+import { authClient } from '@/lib/auth.client';
 
-// In your settings/profile page
-<PasskeyManager />
+// Send OTP
+await authClient.emailOtp.sendVerificationOtp({
+  email: "user@example.com",
+  type: "sign-in",
+});
+
+// Verify OTP
+await authClient.signIn.emailOtp({
+  email: "user@example.com",
+  otp: "123456",
+});
 ```
 
-This component allows users to:
-- View all registered passkeys
-- Add new passkeys
-- Delete existing passkeys
-
-### 5. Logout (works for all methods)
+### 6. Logout (works for all methods)
 ```tsx
 const { logout } = useAuth();
 
@@ -146,8 +113,6 @@ const { logout } = useAuth();
 ```
 
 ## Session Data
-
-The hook provides user session information:
 
 ```tsx
 const { user, session } = useAuth();
@@ -162,15 +127,6 @@ console.log(session);         // Full session object
 
 1. **Single Source of Truth** - All auth logic in one place
 2. **Consistent API** - Same patterns for all auth methods
-3. **Easy to Use** - Import one hook, get everything you need
+3. **Easy to Use** - Import one hook, get everything
 4. **Type Safe** - Full TypeScript support
-5. **Maintainable** - Changes to auth flow only need updates in one file
-
-## Old Hooks (Deprecated)
-
-The following hooks are now deprecated and replaced by `useAuth`:
-- ❌ `useTwitterAuth`
-- ❌ `useGoogleAuth`
-- ❌ `useSIWE`
-
-Always use `useAuth` instead!
+5. **Maintainable** - Changes only needed in one file

@@ -1,252 +1,165 @@
 # Database Setup Guide
 
-This guide explains how to set up and initialize the PostgreSQL database for Better Auth.
+This project uses **SQLite** for the database — either Cloudflare D1 (production) or better-sqlite3 (local Node.js).
 
-## Quick Start (Recommended)
+## Cloudflare D1
 
-### 1. Start Docker Desktop
-Open Docker Desktop and wait for it to be ready.
+### Create Database
 
-### 2. Start Database
 ```bash
 cd backend
-docker-compose up -d
+bun run db:create
+# or: npx wrangler d1 create auth-db
 ```
 
-This will:
-- ✅ Start PostgreSQL on port `5433`
-- ✅ Create `auth_db` database
-- ✅ Run initialization script automatically
-- ✅ Start PgAdmin on port `5051`
+Copy the `database_id` from the output and update `wrangler.toml`:
+```toml
+[[d1_databases]]
+binding = "DB"
+database_name = "auth-db"
+database_id = "your-database-id-here"
+```
 
-### 3. Run Migrations
+### Apply Migrations
+
 ```bash
-# Option A: Using npm script
+# Local development
+bun run db:migrate:local
+
+# Production
 bun run db:migrate
-
-# Option B: Using shell script
-./scripts/migrate.sh
-
-# Option C: Direct command
-npx @better-auth/cli migrate
 ```
 
-### 4. Start the Application
+### Check Migration Status
+
 ```bash
-cd ..
-bun run dev
+npx wrangler d1 migrations list DB --local
+npx wrangler d1 migrations list DB --remote
 ```
 
-Done! The database is ready with all tables created.
+### Query Database
+
+```bash
+# Local
+npx wrangler d1 execute DB --local --command "SELECT * FROM user"
+
+# Production
+npx wrangler d1 execute DB --remote --command "SELECT * FROM user"
+```
+
+---
+
+## Local SQLite (Node.js / Bun)
+
+When using `bun run dev:node`, the database is created automatically at `./data/local.db`. Migrations run on startup.
+
+### Access with CLI
+
+```bash
+# Install sqlite3 CLI if needed
+brew install sqlite3  # macOS
+
+# Open database
+sqlite3 ./backend/data/local.db
+
+# Common queries
+.tables
+SELECT * FROM user;
+SELECT * FROM session;
+.quit
+```
 
 ---
 
 ## What Gets Created
 
-Better Auth will automatically create these tables:
+Better Auth creates these tables:
 
-- `user` - User profiles and accounts
-- `session` - Active user sessions
-- `account` - Linked social accounts (Twitter, Google)
-- `verification` - Email/phone verification codes
-- `walletAddress` - Ethereum wallet addresses (for SIWE)
-
----
-
-## Database Commands
-
-### Check Database Status
-```bash
-docker-compose ps
-```
-
-### View Database Logs
-```bash
-docker-compose logs -f postgres
-```
-
-### Connect to Database
-```bash
-# Using psql
-docker exec -it better-auth-template-postgres psql -U postgres -d auth_db
-
-# Or from host (if psql is installed)
-psql -h localhost -p 5433 -U postgres -d auth_db
-```
-
-### Stop Database
-```bash
-docker-compose stop
-```
-
-### Restart Database
-```bash
-docker-compose restart
-```
-
-### Remove Database (⚠️ Deletes all data)
-```bash
-docker-compose down -v
-```
+| Table | Purpose |
+|-------|---------|
+| `user` | User profiles (id, name, email, image) |
+| `session` | Active sessions with tokens |
+| `account` | Linked accounts (OAuth, credentials) |
+| `verification` | Email verification & OTP tokens |
 
 ---
 
-## Manual Migration
+## Adding Migrations
 
-If you need to manually run migrations:
+### 1. Create a new migration file
 
 ```bash
-cd backend
+# D1 way
+npx wrangler d1 migrations create DB add-custom-table
+```
 
-# Check what will be migrated
-npx @better-auth/cli generate
+This creates `migrations/0002_add-custom-table.sql`.
 
-# Apply migrations
-npx @better-auth/cli migrate
+### 2. Write the SQL
+
+```sql
+CREATE TABLE IF NOT EXISTS user_preferences (
+  user_id TEXT NOT NULL REFERENCES user(id),
+  theme TEXT DEFAULT 'light',
+  notifications INTEGER DEFAULT 1,
+  PRIMARY KEY (user_id)
+);
+```
+
+### 3. Apply
+
+```bash
+bun run db:migrate:local   # local
+bun run db:migrate          # production
 ```
 
 ---
 
 ## Troubleshooting
 
-### Port Already in Use
+### Migration fails
 
-If port 5433 is already taken:
-
-1. Edit `docker-compose.yml`:
-   ```yaml
-   ports:
-     - "5434:5432"  # Change to 5434
-   ```
-
-2. Edit `backend/.env`:
-   ```
-   DB_PORT=5434
-   ```
-
-3. Restart:
-   ```bash
-   docker-compose down
-   docker-compose up -d
-   ```
-
-### Database Connection Failed
-
-Check if Docker is running:
 ```bash
-docker ps
+# Check current state
+npx wrangler d1 migrations list DB --local
+
+# Check what's in the database
+npx wrangler d1 execute DB --local --command ".tables"
 ```
 
-Check if database is healthy:
+### Reset local database
+
 ```bash
-docker-compose ps
+# D1 local — delete wrangler state
+rm -rf .wrangler/state
+
+# Re-apply migrations
+bun run db:migrate:local
+
+# SQLite local — delete the file
+rm ./data/local.db
+bun run dev:node  # recreates on startup
 ```
 
-View logs:
+### D1 database not found
+
+Ensure `database_id` in `wrangler.toml` matches your actual D1 database. Run `npx wrangler d1 list` to see available databases.
+
+---
+
+## Backup
+
+### D1 (Cloudflare)
+
+D1 has automatic point-in-time recovery via Cloudflare dashboard.
+
+Export manually:
 ```bash
-docker-compose logs postgres
+npx wrangler d1 export DB --remote --output backup.sql
 ```
 
-### Migration Errors
+### SQLite (local)
 
-If migrations fail:
-
-1. Check database connection:
-   ```bash
-   docker exec -it better-auth-template-postgres psql -U postgres -d auth_db -c "SELECT 1;"
-   ```
-
-2. Check Better Auth configuration in `backend/lib/auth.ts`
-
-3. Manually inspect what needs to be migrated:
-   ```bash
-   npx @better-auth/cli generate
-   ```
-
----
-
-## Database Schema Updates
-
-When you add new Better Auth plugins or features:
-
-1. Generate schema to see changes:
-   ```bash
-   bun run db:generate
-   ```
-
-2. Apply the changes:
-   ```bash
-   bun run db:migrate
-   ```
-
----
-
-## Production Deployment
-
-For production, use a managed PostgreSQL service:
-
-1. Create a PostgreSQL instance (e.g., AWS RDS, Supabase, Neon)
-
-2. Update environment variables:
-   ```env
-   DB_HOST=your-prod-db-host
-   DB_PORT=5432
-   DB_USER=your-db-user
-   DB_PASSWORD=your-db-password
-   DB_NAME=your-db-name
-   ```
-
-3. Run migrations:
-   ```bash
-   bun run db:migrate
-   ```
-
-4. Deploy your backend application
-
----
-
-## PgAdmin Access
-
-PgAdmin is available at: http://localhost:5051
-
-**Login:**
-- Email: `admin@example.com`
-- Password: `admin`
-
-**Add Server:**
-1. Right-click "Servers" → Create → Server
-2. General tab: Name = "Better Auth"
-3. Connection tab:
-   - Host: `better-auth-template-postgres`
-   - Port: `5432` (internal port)
-   - Username: `postgres`
-   - Password: `postgres`
-   - Database: `auth_db`
-
----
-
-## File Structure
-
+```bash
+cp ./data/local.db ./data/local.db.backup
 ```
-backend/
-├── docker-compose.yml          # Docker services configuration
-├── docker/
-│   └── init-db.sql            # Database initialization SQL
-├── scripts/
-│   ├── migrate.sh             # Migration script
-│   └── init-db.sh             # Initialization script
-└── .env                       # Database connection settings
-```
-
----
-
-## Next Steps
-
-After database setup:
-
-1. Configure OAuth providers (Twitter, Google)
-2. Start the development server
-3. Test authentication flows
-4. Deploy to production
-
-See [README.md](../README.md) for full setup instructions.

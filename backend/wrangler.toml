@@ -1,0 +1,24 @@
+name = "better-auth-backend"
+main = "src/index.ts"
+compatibility_date = "2024-12-01"
+compatibility_flags = ["nodejs_compat"]
+
+[vars]
+BETTER_AUTH_URL = "http://localhost:8787"
+APP_URL = "http://localhost:3000"
+TRUSTED_ORIGINS = "http://localhost:3000"
+
+# Secrets (set via `wrangler secret put <NAME>`):
+# BETTER_AUTH_SECRET
+# GOOGLE_CLIENT_ID
+# GOOGLE_CLIENT_SECRET
+# TWITTER_CLIENT_ID
+# TWITTER_CLIENT_SECRET
+# RESEND_API_KEY
+# RESEND_FROM_EMAIL
+
+[[d1_databases]]
+binding = "DB"
+database_name = "auth-db"
+database_id = "placeholder-replace-with-your-d1-database-id"
+migrations_dir = "migrations"

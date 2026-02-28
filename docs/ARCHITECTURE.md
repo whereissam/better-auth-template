@@ -10,7 +10,7 @@ Detailed explanation of the authentication architecture.
 │  ┌───────────────────────────────────────────────────────┐  │
 │  │  React App (http://localhost:3000)                    │  │
 │  │  ┌─────────────────┐  ┌──────────────────┐           │  │
-│  │  │ useTwitterAuth  │  │    useSIWE       │           │  │
+│  │  │  useEmailAuth   │  │    useAuth       │           │  │
 │  │  └────────┬────────┘  └────────┬─────────┘           │  │
 │  │           │                     │                     │  │
 │  │           └──────────┬──────────┘                     │  │
@@ -21,7 +21,7 @@ Detailed explanation of the authentication architecture.
 │  │              └───────┬────────┘                       │  │
 │  └──────────────────────┼────────────────────────────────┘  │
 │                         │                                   │
-│                    /api/* proxy                             │
+│                    /api/* proxy                              │
 │                         │                                   │
 └─────────────────────────┼───────────────────────────────────┘
                           │
@@ -30,157 +30,110 @@ Detailed explanation of the authentication architecture.
 ┌─────────────────────────▼───────────────────────────────────┐
 │                       Backend                                │
 │  ┌───────────────────────────────────────────────────────┐  │
-│  │  Express Server (http://localhost:3005)               │  │
-│  │                                                        │  │
+│  │  Hono Server                                          │  │
+│  │  Cloudflare Workers (:8787) or Node.js (:3005)       │  │
+│  │                                                       │  │
 │  │  ┌────────────────────┐  ┌──────────────────────┐    │  │
-│  │  │ Better Auth Router │  │  SIWE Router         │    │  │
-│  │  │ /api/auth/*        │  │  /api/siwe/*         │    │  │
-│  │  └─────────┬──────────┘  └──────────┬───────────┘    │  │
-│  │            │                         │                │  │
-│  │            └──────────┬──────────────┘                │  │
-│  │                       │                               │  │
-│  │               ┌───────▼────────┐                      │  │
-│  │               │  PostgreSQL    │                      │  │
-│  │               │   Connection   │                      │  │
-│  │               └───────┬────────┘                      │  │
-│  └───────────────────────┼────────────────────────────────┘  │
-└─────────────────────────┼───────────────────────────────────┘
-                          │
-                          │
-                    ┌─────▼──────┐
-                    │ PostgreSQL │
-                    │  Database  │
-                    └────────────┘
+│  │  │ Better Auth Router │  │  Email Service       │    │  │
+│  │  │ /api/auth/*        │  │  (Resend API)        │    │  │
+│  │  └─────────┬──────────┘  └──────────────────────┘    │  │
+│  │            │                                          │  │
+│  │    ┌───────▼────────┐                                 │  │
+│  │    │  D1 (SQLite)   │                                 │  │
+│  │    │  Database       │                                 │  │
+│  │    └────────────────┘                                 │  │
+│  └───────────────────────────────────────────────────────┘  │
+└─────────────────────────────────────────────────────────────┘
+```
+
+## Deployment Options
+
+```
+Option A: Cloudflare                    Option B: Traditional
+┌──────────────────────┐               ┌──────────────────────┐
+│ Cloudflare Workers   │               │ Node.js / Bun        │
+│ + D1 (SQLite)        │               │ + SQLite / PostgreSQL│
+│                      │               │                      │
+│ Entry: src/index.ts  │               │ Entry: src/node.ts   │
+│ DB: Kysely + D1Dialect│              │ DB: better-sqlite3   │
+│ Deploy: wrangler     │               │ Deploy: Docker / VPS │
+└──────────────────────┘               └──────────────────────┘
 ```
 
 ## Authentication Flows
 
-### 1. Twitter OAuth Flow
+### 1. Email/Password Flow
 
 ```
-User                Frontend              Backend              Twitter
+User                Frontend              Backend
+  │                    │                     │
+  │  Sign Up           │                     │
+  ├───────────────────►│                     │
+  │                    │  POST /api/auth/    │
+  │                    │  sign-up/email      │
+  │                    ├────────────────────►│
+  │                    │                     │  Create user
+  │                    │                     │  Hash password
+  │                    │                     │  Send verify email
+  │                    │  Set-Cookie         │
+  │◄───────────────────┴─────────────────────┤
+  │  Logged in ✅       │                     │
+```
+
+### 2. OAuth Flow (Google / Twitter)
+
+```
+User                Frontend              Backend              Provider
   │                    │                     │                    │
   │  Click "Login"     │                     │                    │
   ├───────────────────►│                     │                    │
   │                    │  POST /api/auth/    │                    │
   │                    │  signin/social/     │                    │
-  │                    │  twitter            │                    │
+  │                    │  google             │                    │
   │                    ├────────────────────►│                    │
   │                    │                     │  OAuth redirect    │
   │                    │                     ├───────────────────►│
-  │                    │                     │                    │
   │◄───────────────────┴─────────────────────┴────────────────────┤
-  │                    Twitter Login Page                         │
+  │                    Provider Login Page                        │
   ├──────────────────────────────────────────────────────────────►│
   │                    User authorizes                            │
-  │                                                                │
-  │                                          Twitter redirects    │
-  │                                          to callback          │
-  │◄───────────────────────────────────────────────────────────────┤
+  │◄──────────────────────────────────────────────────────────────┤
   │                    │                     │                    │
   │  Redirect to       │  GET /api/auth/     │                    │
-  │  callback          │  callback/twitter   │                    │
-  │                    │  ?code=xxx          │                    │
+  │  callback          │  callback/google    │                    │
   ├───────────────────►├────────────────────►│                    │
-  │                    │                     │                    │
   │                    │                     │  Exchange code     │
-  │                    │                     │  for token         │
   │                    │                     ├───────────────────►│
   │                    │                     │◄───────────────────┤
-  │                    │                     │  Access token      │
-  │                    │                     │                    │
-  │                    │                     │  Create user       │
-  │                    │                     │  & session         │
-  │                    │                     │  in database       │
-  │                    │                     │                    │
-  │                    │  Set-Cookie:        │                    │
-  │                    │  session_token      │                    │
+  │                    │                     │  Create session    │
+  │                    │  Set-Cookie         │                    │
   │◄───────────────────┴─────────────────────┤                    │
-  │                    │                     │                    │
-  │  Logged in ✅      │                     │                    │
+  │  Logged in ✅       │                     │                    │
 ```
 
-### 2. SIWE (Sign-In With Ethereum) Flow
+### 3. Magic Link Flow
 
 ```
-User                Frontend              Backend            Blockchain
-  │                    │                     │                    │
-  │  Connect Wallet    │                     │                    │
-  ├───────────────────►│                     │                    │
-  │                    │                     │                    │
-  │  Click "Sign In    │                     │                    │
-  │  with Ethereum"    │                     │                    │
-  ├───────────────────►│                     │                    │
-  │                    │                     │                    │
-  │                    │ Generate SIWE       │                    │
-  │                    │ message             │                    │
-  │                    │                     │                    │
-  │  Sign message      │                     │                    │
-  │◄───────────────────┤                     │                    │
-  ├───────────────────►│                     │                    │
-  │  Signature         │                     │                    │
-  │                    │                     │                    │
-  │                    │ POST /api/siwe/sign │                    │
-  │                    │ { address, message, │                    │
-  │                    │   signature }       │                    │
-  │                    ├────────────────────►│                    │
-  │                    │                     │                    │
-  │                    │                     │ Verify signature   │
-  │                    │                     │ (cryptographic)    │
-  │                    │                     │                    │
-  │                    │                     │ Create user        │
-  │                    │                     │ & session          │
-  │                    │                     │ in database        │
-  │                    │                     │                    │
-  │                    │ Set-Cookie:         │                    │
-  │                    │ session_token       │                    │
-  │◄───────────────────┴─────────────────────┤                    │
-  │                    │                     │                    │
-  │  Logged in ✅      │                     │                    │
-```
-
-### 3. Passkey (WebAuthn) Flow
-
-```
-User                Frontend              Backend              Authenticator
-  │                    │                     │                    │
-  │  Click "Sign In    │                     │                    │
-  │  with Passkey"     │                     │                    │
-  ├───────────────────►│                     │                    │
-  │                    │                     │                    │
-  │                    │ POST /api/auth/     │                    │
-  │                    │ passkey/generate-   │                    │
-  │                    │ authenticate-opts   │                    │
-  │                    ├────────────────────►│                    │
-  │                    │                     │                    │
-  │                    │  Challenge options  │                    │
-  │                    │◄────────────────────┤                    │
-  │                    │                     │                    │
-  │  Biometric/PIN     │  WebAuthn API       │                    │
-  │  prompt            │  creates assertion  │                    │
-  │◄───────────────────┼─────────────────────┼───────────────────►│
-  │                    │                     │                    │
-  │  Authenticate      │                     │                    │
-  ├───────────────────►│                     │                    │
-  │                    │                     │  Signed assertion  │
-  │                    │◄────────────────────┼────────────────────┤
-  │                    │                     │                    │
-  │                    │ POST /api/auth/     │                    │
-  │                    │ signin-passkey      │                    │
-  │                    │ { credential }      │                    │
-  │                    ├────────────────────►│                    │
-  │                    │                     │                    │
-  │                    │                     │ Verify signature   │
-  │                    │                     │ against stored     │
-  │                    │                     │ public key         │
-  │                    │                     │                    │
-  │                    │                     │ Create session     │
-  │                    │                     │                    │
-  │                    │ Set-Cookie:         │                    │
-  │                    │ session_token       │                    │
-  │◄───────────────────┴─────────────────────┤                    │
-  │                    │                     │                    │
-  │  Logged in ✅      │                     │                    │
+User                Frontend              Backend
+  │                    │                     │
+  │  Enter email       │                     │
+  ├───────────────────►│                     │
+  │                    │  POST /api/auth/    │
+  │                    │  magic-link/        │
+  │                    │  send               │
+  │                    ├────────────────────►│
+  │                    │                     │  Generate token
+  │                    │                     │  Send email
+  │                    │  200 OK             │
+  │◄───────────────────┴─────────────────────┤
+  │                                          │
+  │  Click link in email                     │
+  ├─────────────────────────────────────────►│
+  │                     Verify token         │
+  │                     Create session       │
+  │  Set-Cookie + redirect                   │
+  │◄─────────────────────────────────────────┤
+  │  Logged in ✅                             │
 ```
 
 ## Key Components
@@ -190,111 +143,73 @@ User                Frontend              Backend              Authenticator
 #### 1. **authClient** (`frontend/src/lib/auth.client.ts`)
 - Created using Better Auth React
 - Configured with `baseURL: window.location.origin`
-- Uses proxy in development (`/api/*` → `localhost:3005`)
+- Uses Vite proxy in development (`/api/*` → backend)
 - Handles OAuth redirects and session management
 
-#### 2. **useTwitterAuth** (`frontend/src/hooks/useTwitterAuth.ts`)
-- Custom React hook for Twitter authentication
-- Features:
-  - Session caching (reduces API calls)
-  - Auto-refresh on window focus
-  - Rate limiting protection
-  - Filters wallet addresses from usernames
-- Methods: `login()`, `logout()`
-- State: `user`, `isLoading`
-
-#### 3. **useSIWE** (`frontend/src/hooks/useSIWE.ts`)
-- Custom React hook for SIWE
-- Integrates with wagmi for wallet connection
-- Generates SIWE message following EIP-4361
-- Sends signature to backend for verification
-- Compatible with Better Auth sessions
-
-#### 4. **PasskeyAuth** (`frontend/src/components/PasskeyAuth.tsx`)
-- React component for passkey authentication
-- Features:
-  - Sign in with existing passkeys
-  - Register new passkeys (when authenticated)
-  - List and manage passkeys
-  - Browser support detection
-- Uses WebAuthn API via Better Auth passkey client
+#### 2. **useAuth** (`frontend/src/hooks/useAuth.ts`)
+- Centralized auth hook for all methods
+- Methods: `loginWithGoogle`, `loginWithTwitter`, `logout`
+- State: `user`, `session`, `isLoading`
 
 ### Backend
 
-#### 1. **Better Auth Handler** (`backend/server.ts`)
-- Mounted at `/api/auth/*`
-- Handles all Better Auth routes automatically:
-  - `/api/auth/signin/social/twitter` - Start OAuth
-  - `/api/auth/callback/twitter` - OAuth callback
-  - `/api/auth/session` - Get session
-  - `/api/auth/signout` - Logout
-  - `/api/auth/list-accounts` - List linked accounts
-  - `/api/auth/passkey/*` - Passkey operations
-- Manages proxy headers (`x-forwarded-host`, `x-forwarded-proto`)
-- Sets cookies correctly for same-domain requests
+#### 1. **Better Auth Handler** (`backend/src/index.ts`)
+- Hono app mounted at `/api/auth/**`
+- Routes handled automatically by Better Auth:
+  - `/api/auth/sign-up/email` - Email sign up
+  - `/api/auth/sign-in/email` - Email sign in
+  - `/api/auth/signin/social/google` - Google OAuth
+  - `/api/auth/callback/google` - OAuth callback
+  - `/api/auth/get-session` - Get session
+  - `/api/auth/sign-out` - Logout
+  - `/api/auth/magic-link/send` - Send magic link
+  - `/api/auth/email-otp/send` - Send OTP
 
-#### 2. **SIWE Router** (`backend/routes/siwe.ts`)
-- Custom implementation of SIWE authentication
-- Routes:
-  - `POST /api/siwe/sign` - Verify signature & create session
-  - `GET /api/siwe/verify` - Check session validity
-- Creates Better Auth compatible sessions
-- Stores wallet address as username
+#### 2. **Auth Factory** (`backend/src/lib/auth.ts`)
+- `createAuth(config)` — portable factory function
+- Accepts any Better Auth-compatible database
+- Configures email/password, OAuth, magic link, email OTP
+- Conditionally enables OAuth providers based on env vars
 
-#### 3. **Database Layer** (`backend/lib/db.ts`)
-- PostgreSQL connection pool
-- Better Auth manages schema automatically
-- Tables created on first run:
-  - `user` - User profiles
-  - `session` - Sessions with tokens
-  - `account` - Linked social accounts
-  - `passkey` - Registered passkeys (WebAuthn credentials)
+#### 3. **Email Service** (`backend/src/lib/email.ts`)
+- Raw `fetch` to Resend API (no SDK — works everywhere)
+- Functions: `sendEmail`, `sendOTP`, `sendMagicLinkEmail`
+- Logs warning in dev when Resend is not configured
 
 ## Security Features
 
-### 1. **Secure Cookies**
+### 1. Secure Cookies
 ```typescript
 {
-  httpOnly: true,              // Not accessible via JavaScript
-  secure: true,                // HTTPS only in production
-  sameSite: 'lax',            // CSRF protection
-  maxAge: 30 * 24 * 60 * 60 * 1000  // 30 days
+  httpOnly: true,       // Not accessible via JavaScript
+  secure: true,         // HTTPS only in production
+  sameSite: 'lax',      // CSRF protection
 }
 ```
 
-### 2. **CORS Configuration**
+### 2. CORS Configuration
 ```typescript
 cors({
-  origin: allowedOrigins,     // Whitelist specific origins
-  credentials: true,          // Allow cookies
+  origin: trustedOrigins,  // Whitelist specific origins
+  credentials: true,       // Allow cookies
 })
 ```
 
-### 3. **Rate Limiting**
-```typescript
-rateLimit({
-  windowMs: 15 * 60 * 1000,  // 15 minutes
-  max: 100,                   // 100 requests per window
-})
-```
+### 3. Rate Limiting
+- Cloudflare: Use WAF Rate Limiting Rules (edge-level)
+- Node.js: Add Hono rate limiter middleware
 
-### 4. **Security Headers** (Helmet)
-- X-Frame-Options
-- X-Content-Type-Options
-- X-XSS-Protection
-- Content-Security-Policy (configurable)
-
-### 5. **Input Validation**
-- SIWE message verification
-- Signature cryptographic verification
-- Address format validation
+### 4. Password Security
+- scrypt hashing (OWASP recommended)
+- Min 8 chars, max 128 chars
+- Email verification required
 
 ## Session Management
 
 ### Session Creation
-1. User authenticates (Twitter OAuth or SIWE)
+1. User authenticates (email, OAuth, magic link, OTP)
 2. Backend creates record in `session` table
-3. Backend generates random session token (UUID)
+3. Backend generates random session token
 4. Token stored in HTTP-only cookie
 5. Cookie sent with all requests via `credentials: "include"`
 
@@ -305,20 +220,6 @@ rateLimit({
 4. Check expiration date
 5. Return user data if valid
 
-### Session Caching (Frontend)
-```typescript
-// Cache in memory for 60 seconds
-sessionCache = {
-  data: session,
-  timestamp: Date.now()
-}
-```
-
-Benefits:
-- Reduces API calls
-- Faster UI updates
-- Less backend load
-
 ## Proxy Configuration
 
 ### Development
@@ -327,16 +228,17 @@ Vite proxy forwards `/api/*` to backend:
 // vite.config.ts
 proxy: {
   '/api': {
-    target: 'http://localhost:3005',
+    target: 'http://localhost:8787',  // or :3005 for Node.js
     changeOrigin: true,
   }
 }
 ```
 
-Frontend requests `http://localhost:3000/api/auth/session` → Backend at `http://localhost:3005/api/auth/session`
+### Production (Cloudflare)
+Frontend and backend on same domain via Cloudflare routing — no proxy needed.
 
-### Production
-Reverse proxy (Nginx, Vercel, etc.) handles routing:
+### Production (Self-hosted)
+Reverse proxy (Nginx, Caddy) handles routing:
 ```nginx
 location /api/ {
     proxy_pass http://backend:3005/api/;
@@ -345,80 +247,12 @@ location /api/ {
 }
 ```
 
-## Database Schema Details
-
-### Better Auth Tables
-
-**user**
-- Stores user profiles
-- Can be linked to multiple accounts (Twitter, wallet, etc.)
-- `name` field used for display name or wallet address
-
-**session**
-- Stores active sessions
-- Token is the cookie value
-- Auto-expires based on `expiresAt`
-
-**account**
-- Links users to OAuth providers
-- Stores provider-specific data (Twitter user ID, access tokens)
-- Multiple accounts can link to same user
-
-### Custom Extensions
-
-You can extend with custom tables:
-```sql
-CREATE TABLE user_preferences (
-  user_id VARCHAR(36) REFERENCES "user"("id"),
-  theme VARCHAR(20),
-  notifications BOOLEAN
-);
-```
-
-## Error Handling
-
-### Frontend
-```typescript
-try {
-  await authClient.signIn.social({ provider: 'twitter' });
-} catch (error) {
-  // Handle rate limiting
-  if (error.status === 429) {
-    console.warn('Rate limited');
-  }
-  // Handle network errors
-  else if (error.message.includes('Network')) {
-    console.error('Network error');
-  }
-}
-```
-
-### Backend
-```typescript
-// Express error handler
-app.use((err, req, res, next) => {
-  logger.error('Error:', err);
-  res.status(500).json({ error: 'Internal server error' });
-});
-```
-
-## Performance Optimizations
-
-1. **Session Caching** - Reduces API calls by 60 seconds
-2. **Connection Pooling** - Reuses database connections
-3. **Debouncing** - Prevents rapid re-auth checks
-4. **Focus Detection** - Only re-checks auth when needed
-5. **Account Caching** - Caches linked accounts for 60 seconds
-
 ## Deployment Considerations
 
 See [DEPLOYMENT.md](./DEPLOYMENT.md) for detailed deployment guides.
 
 Key points:
-- Set `NODE_ENV=production`
 - Use HTTPS for secure cookies
-- Configure reverse proxy correctly
-- Set strong `BETTER_AUTH_SECRET`
-- Use managed PostgreSQL in production
-- Enable connection pooling
-- Set up monitoring and logging
+- Set strong `BETTER_AUTH_SECRET` (min 32 chars)
+- Configure CORS with exact origins (no wildcards)
+- Set up monitoring (health check at `/health`)

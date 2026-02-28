@@ -1,0 +1,27 @@
+# Local dev secrets for wrangler dev
+# Copy to .dev.vars and fill in values
+
+BETTER_AUTH_SECRET=your_random_secret_key_here_min_32_chars
+
+# OAuth (optional)
+GOOGLE_CLIENT_ID=
+GOOGLE_CLIENT_SECRET=
+TWITTER_CLIENT_ID=
+TWITTER_CLIENT_SECRET=
+
+# Email (optional — emails are skipped if not set)
+RESEND_API_KEY=
+RESEND_FROM_EMAIL=noreply@yourdomain.com
+
+# Rate Limiting (optional — defaults: 15 min window, 1000 requests per IP)
+RATE_LIMIT_WINDOW_MS=900000
+RATE_LIMIT_MAX_REQUESTS=1000
+
+# SIWE (Sign in with Ethereum) — optional
+SIWE_DOMAIN=localhost:3000
+SIWE_EMAIL_DOMAIN=localhost
+
+# Passkey (WebAuthn) — optional
+PASSKEY_RP_ID=localhost
+PASSKEY_RP_NAME=Better Auth Template
+PASSKEY_ORIGIN=http://localhost:3000

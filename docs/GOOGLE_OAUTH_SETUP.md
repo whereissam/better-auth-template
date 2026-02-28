@@ -67,8 +67,9 @@ Complete guide to set up Google OAuth authentication.
 - Production: `https://yourdomain.com`
 
 **Authorized redirect URIs**:
-- Development: `http://localhost:3000/api/auth/callback/google`
-- Production: `https://yourdomain.com/api/auth/callback/google`
+- Development: `http://localhost:8787/api/auth/callback/google` (Cloudflare Workers)
+- Development: `http://localhost:3005/api/auth/callback/google` (Node.js)
+- Production: `https://api.yourdomain.com/api/auth/callback/google`
 
 **Important**: The redirect URI must match exactly, including:
 - Protocol (http vs https)
@@ -90,10 +91,16 @@ You can always view these later from the Credentials page.
 
 ## 6. Add to Environment Variables
 
-### Backend `.env`
+### Backend
 
+For Cloudflare Workers, add to `.dev.vars`:
 ```env
-# Google OAuth
+GOOGLE_CLIENT_ID=your_client_id_here.apps.googleusercontent.com
+GOOGLE_CLIENT_SECRET=your_client_secret_here
+```
+
+For Node.js, add to `.env`:
+```env
 GOOGLE_CLIENT_ID=your_client_id_here.apps.googleusercontent.com
 GOOGLE_CLIENT_SECRET=your_client_secret_here
 ```
@@ -102,7 +109,9 @@ GOOGLE_CLIENT_SECRET=your_client_secret_here
 
 ```bash
 cd backend
-npm run dev
+bun run dev       # Cloudflare Workers
+# or
+bun run dev:node  # Node.js
 ```
 
 ## 7. Test Authentication
@@ -137,9 +146,9 @@ npm run dev
 4. Include protocol, domain, port, and path
 
 Common mistakes:
-- `http://localhost:3000/api/auth/callback/google` ✅
-- `http://localhost:3000/api/auth/callback/google/` ❌ (trailing slash)
-- `http://127.0.0.1:3000/api/auth/callback/google` ❌ (use localhost, not 127.0.0.1)
+- `http://localhost:8787/api/auth/callback/google` ✅
+- `http://localhost:8787/api/auth/callback/google/` ❌ (trailing slash)
+- `http://127.0.0.1:8787/api/auth/callback/google` ❌ (use localhost, not 127.0.0.1)
 
 ### Error: "This app has not been verified"
 
@@ -193,12 +202,16 @@ https://yourdomain.com/api/auth/callback/google
 
 ### 3. Update Environment Variables
 
+For Cloudflare Workers:
+```bash
+wrangler secret put GOOGLE_CLIENT_ID
+wrangler secret put GOOGLE_CLIENT_SECRET
+```
+
+For Node.js, edit `.env`:
 ```env
-# Production backend .env
 GOOGLE_CLIENT_ID=your_client_id.apps.googleusercontent.com
 GOOGLE_CLIENT_SECRET=your_client_secret
-APP_URL=https://yourdomain.com
-ALLOWED_ORIGINS=https://yourdomain.com
 ```
 
 ### 4. App Verification (Optional but Recommended)

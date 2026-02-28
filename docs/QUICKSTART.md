@@ -4,107 +4,96 @@ Get up and running in 3 steps!
 
 ## Prerequisites
 
-- ✅ **Docker Desktop** - [Download here](https://www.docker.com/products/docker-desktop/)
-- ✅ **Bun** (recommended) or Node.js 18+
+- **Bun** (recommended) or Node.js 18+
 
-## Step 1: Start Docker Desktop
-
-1. Open **Docker Desktop** application
-2. Wait for it to be fully ready (whale icon in menu bar)
-3. You should see the whale icon stop animating
-
-## Step 2: Run Setup
+## Step 1: Install Dependencies
 
 ```bash
 cd better-auth-template
-bun run setup
+bun install
+
+cd backend && bun install
+cd ../frontend && bun install
 ```
 
-This will:
-- ✅ Check Docker is running
-- ✅ Start PostgreSQL database
-- ✅ Run database migrations
-- ✅ Create all necessary tables
+## Step 2: Set Up Backend
 
-## Step 3: Start Development
+### Option A: Cloudflare Workers (D1)
 
 ```bash
+cd backend
+
+# Copy secrets template
+cp .dev.vars.example .dev.vars
+# Edit .dev.vars and set BETTER_AUTH_SECRET
+
+# Apply database migrations
+bun run db:migrate:local
+
+# Start dev server
 bun run dev
 ```
 
-This starts:
-- **Frontend**: http://localhost:3000
-- **Backend**: http://localhost:3005
-- **PgAdmin**: http://localhost:5051
-
----
-
-## Alternative: One Command Setup
+### Option B: Node.js / Bun (SQLite)
 
 ```bash
-bun run start
+cd backend
+
+# Copy env template
+cp .env.example .env
+# Edit .env and set BETTER_AUTH_SECRET
+
+# Start dev server (auto-creates SQLite DB + runs migrations)
+bun run dev:node
 ```
 
-This runs both setup and dev in one command!
+## Step 3: Start Frontend
+
+```bash
+cd frontend
+bun run dev
+```
+
+Access:
+- **Frontend**: http://localhost:3000
+- **Backend**: http://localhost:8787 (Cloudflare) or http://localhost:3005 (Node.js)
 
 ---
 
 ## Common Issues
 
-### ❌ "Docker is not running"
+### "Port already in use"
 
-**Solution**: Start Docker Desktop and wait for it to be ready, then try again.
-
-### ❌ "ECONNREFUSED" on frontend
-
-**Problem**: Backend is not running (usually because database is not started)
-
-**Solution**:
-```bash
-# Stop everything
-Ctrl+C
-
-# Start database
-bun run db:up
-
-# Wait 5 seconds, then start dev
-bun run dev
-```
-
-### ❌ "Port already in use"
-
-**Solution**:
 ```bash
 # Kill process on port 3000 (frontend)
 lsof -ti:3000 | xargs kill -9
 
-# Kill process on port 3005 (backend)
-lsof -ti:3005 | xargs kill -9
-
-# Try again
-bun run dev
+# Kill process on port 8787 (wrangler)
+lsof -ti:8787 | xargs kill -9
 ```
+
+### Cookies not persisting
+
+- Check Vite proxy in `vite.config.ts` points to correct backend port
+- Ensure `credentials: "include"` in auth client
+- Verify CORS `credentials: true` on backend
 
 ---
 
 ## Useful Commands
 
 ```bash
-# Database management
-bun run db:up        # Start database
-bun run db:down      # Stop database
-bun run db:status    # Check database status
-bun run db:logs      # View database logs
-bun run db:migrate   # Run migrations
+# Cloudflare Workers
+bun run dev              # Start wrangler dev server
+bun run deploy           # Deploy to Cloudflare
+bun run db:migrate:local # Apply D1 migrations locally
+bun run db:migrate       # Apply D1 migrations to production
 
-# Development
-bun run dev          # Start both frontend & backend
-bun run dev:frontend # Start only frontend
-bun run dev:backend  # Start only backend
+# Node.js / Bun
+bun run dev:node         # Start Node.js dev server (SQLite)
 
-# Complete setup
-bun run setup        # Setup database
-bun run start        # Setup + start dev
+# Frontend
+cd frontend && bun run dev  # Start frontend
 ```
 
 ---
@@ -112,18 +101,16 @@ bun run start        # Setup + start dev
 ## Next Steps
 
 1. **Configure OAuth Providers** (optional)
-   - See [docs/GOOGLE_OAUTH_SETUP.md](docs/GOOGLE_OAUTH_SETUP.md)
-   - Twitter/X OAuth setup in README.md
+   - See [GOOGLE_OAUTH_SETUP.md](./GOOGLE_OAUTH_SETUP.md)
 
 2. **Test Authentication**
-   - Click "Sign in" button
-   - Try connecting Ethereum wallet (SIWE)
+   - Sign up with email/password
+   - Try Email OTP or Magic Link
    - Try Google/Twitter OAuth (after configuring)
 
 3. **Customize**
    - Edit frontend components in `frontend/src/`
-   - Add API endpoints in `backend/routes/`
-   - Modify auth configuration in `backend/lib/auth.ts`
+   - Modify auth configuration in `backend/src/lib/auth.ts`
 
 ---
 
@@ -131,20 +118,19 @@ bun run start        # Setup + start dev
 
 ```
 better-auth-template/
-├── frontend/           # React + Vite (deploy to Vercel)
-├── backend/           # Express + Better Auth
-│   ├── scripts/       # Setup and migration scripts
-│   └── docker-compose.yml
-├── docs/              # Documentation
-└── package.json       # Root commands
+├── frontend/              # React + Vite
+├── backend/
+│   ├── src/
+│   │   ├── index.ts       # Cloudflare Workers entry
+│   │   ├── node.ts        # Node.js / Bun entry
+│   │   └── lib/
+│   │       ├── auth.ts    # Better Auth config
+│   │       └── email.ts   # Resend email service
+│   ├── migrations/        # D1 / SQLite migrations
+│   └── wrangler.toml      # Cloudflare config
+└── docs/                  # Documentation
 ```
 
 ---
 
-## Troubleshooting
-
-See [docs/SETUP_DATABASE.md](docs/SETUP_DATABASE.md) for detailed troubleshooting.
-
----
-
-**Happy coding!** 🚀
+See [SETUP.md](./SETUP.md) for detailed setup instructions.

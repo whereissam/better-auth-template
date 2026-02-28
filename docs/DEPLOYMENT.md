@@ -4,494 +4,321 @@ Production deployment guide for Better Auth template.
 
 ## Table of Contents
 
-1. [Environment Variables](#environment-variables)
-2. [Database Setup](#database-setup)
-3. [Vercel Deployment](#vercel-deployment)
-4. [Docker Deployment](#docker-deployment)
-5. [Nginx Configuration](#nginx-configuration)
+1. [Cloudflare Deployment](#cloudflare-deployment) (recommended)
+2. [Docker Deployment](#docker-deployment)
+3. [VPS / Cloud Deployment](#vps--cloud-deployment)
+4. [Frontend Deployment](#frontend-deployment)
+5. [Environment Variables](#environment-variables)
 6. [Security Checklist](#security-checklist)
 
-## Environment Variables
+## Cloudflare Deployment
 
-### Production Backend Environment
-
-```env
-# Database (use managed service in production)
-DB_HOST=your-postgres-host.com
-DB_PORT=5432
-DB_USER=your_db_user
-DB_PASSWORD=strong_password_here
-DB_NAME=auth_db
-
-# Server
-PORT=3005
-NODE_ENV=production
-
-# Twitter OAuth
-TWITTER_CLIENT_ID=your_twitter_client_id
-TWITTER_CLIENT_SECRET=your_twitter_client_secret
-
-# Better Auth (generate new secret!)
-BETTER_AUTH_SECRET=<generate with: openssl rand -base64 32>
-
-# CORS & Origins
-ALLOWED_ORIGINS=https://yourdomain.com
-TRUSTED_ORIGIN=https://yourdomain.com
-APP_URL=https://yourdomain.com
-
-# Logging
-LOG_LEVEL=error
-
-# Rate Limiting
-RATE_LIMIT_WINDOW_MS=900000
-RATE_LIMIT_MAX_REQUESTS=100
-```
-
-### Production Frontend Environment
-
-```env
-VITE_API_URL=https://api.yourdomain.com
-VITE_APP_URL=https://yourdomain.com
-```
-
-## Database Setup
-
-### Option 1: Managed PostgreSQL (Recommended)
-
-**Popular Providers:**
-- [Neon](https://neon.tech/) - Serverless Postgres
-- [Supabase](https://supabase.com/) - Free tier available
-- [Railway](https://railway.app/) - Easy deployment
-- [AWS RDS](https://aws.amazon.com/rds/) - Enterprise-grade
-
-**Steps:**
-1. Create database instance
-2. Note connection string
-3. Update `DB_*` environment variables
-4. Better Auth will auto-create tables on first run
-
-### Option 2: Self-Hosted PostgreSQL
+### 1. Create D1 Database
 
 ```bash
-# Using Docker
-docker run -d \
-  --name auth-postgres \
-  -e POSTGRES_PASSWORD=strong_password \
-  -e POSTGRES_DB=auth_db \
-  -v postgres_data:/var/lib/postgresql/data \
-  -p 5432:5432 \
-  postgres:14-alpine
+cd backend
+bun run db:create
 ```
 
-## Vercel Deployment
+Copy the `database_id` from the output.
 
-### Frontend Deployment
+### 2. Update wrangler.toml
 
-1. **Push to GitHub**
-   ```bash
-   git init
-   git add .
-   git commit -m "Initial commit"
-   git remote add origin <your-repo>
-   git push -u origin main
-   ```
-
-2. **Deploy on Vercel**
-   - Go to [vercel.com](https://vercel.com)
-   - Import your repository
-   - Set root directory to `frontend/`
-   - Add environment variables:
-     ```
-     VITE_API_URL=https://api.yourdomain.com
-     VITE_APP_URL=https://yourdomain.com
-     ```
-   - Deploy
-
-3. **Configure Rewrites** (vercel.json in frontend/)
-   ```json
-   {
-     "rewrites": [
-       {
-         "source": "/api/:path*",
-         "destination": "https://api.yourdomain.com/api/:path*"
-       }
-     ]
-   }
-   ```
-
-### Backend Deployment
-
-**Option 1: Vercel Serverless**
-
-Create `vercel.json` in backend/:
-```json
-{
-  "version": 2,
-  "builds": [
-    {
-      "src": "server.ts",
-      "use": "@vercel/node"
-    }
-  ],
-  "routes": [
-    {
-      "src": "/(.*)",
-      "dest": "server.ts"
-    }
-  ]
-}
+```toml
+[[d1_databases]]
+binding = "DB"
+database_name = "auth-db"
+database_id = "your-actual-database-id"
 ```
 
-**Option 2: Railway**
-1. Go to [railway.app](https://railway.app)
-2. New Project → Deploy from GitHub
-3. Select `backend/` directory
-4. Add environment variables
-5. Deploy
+Update `[vars]` for production:
+```toml
+[vars]
+BETTER_AUTH_URL = "https://api.yourdomain.com"
+APP_URL = "https://yourdomain.com"
+TRUSTED_ORIGINS = "https://yourdomain.com"
+```
+
+### 3. Set Secrets
+
+```bash
+wrangler secret put BETTER_AUTH_SECRET
+wrangler secret put GOOGLE_CLIENT_ID
+wrangler secret put GOOGLE_CLIENT_SECRET
+wrangler secret put RESEND_API_KEY
+wrangler secret put RESEND_FROM_EMAIL
+```
+
+### 4. Apply Migrations & Deploy
+
+```bash
+bun run db:migrate     # Apply migrations to production D1
+bun run deploy         # Deploy Worker
+```
+
+### 5. Custom Domain (optional)
+
+In Cloudflare dashboard:
+1. Workers & Pages → your worker → Settings → Domains & Routes
+2. Add custom domain (e.g., `api.yourdomain.com`)
+
+---
 
 ## Docker Deployment
 
-### 1. Create Dockerfiles
+Uses the Node.js entry point with SQLite.
 
-**Backend Dockerfile:**
-```dockerfile
-FROM node:20-alpine
-
-WORKDIR /app
-
-COPY package*.json ./
-RUN npm ci --only=production
-
-COPY . .
-
-EXPOSE 3005
-
-CMD ["node", "--loader", "tsx", "server.ts"]
-```
-
-**Frontend Dockerfile:**
-```dockerfile
-FROM node:20-alpine AS builder
-
-WORKDIR /app
-
-COPY package*.json ./
-RUN npm ci
-
-COPY . .
-RUN npm run build
-
-FROM nginx:alpine
-COPY --from=builder /app/dist /usr/share/nginx/html
-COPY nginx.conf /etc/nginx/nginx.conf
-
-EXPOSE 80
-CMD ["nginx", "-g", "daemon off;"]
-```
-
-### 2. Docker Compose (Production)
-
-```yaml
-version: '3.8'
-
-services:
-  postgres:
-    image: postgres:14-alpine
-    environment:
-      POSTGRES_PASSWORD: ${DB_PASSWORD}
-      POSTGRES_DB: auth_db
-    volumes:
-      - postgres_data:/var/lib/postgresql/data
-    restart: unless-stopped
-
-  backend:
-    build: ./backend
-    environment:
-      - NODE_ENV=production
-      - DB_HOST=postgres
-      - DB_PASSWORD=${DB_PASSWORD}
-      - TWITTER_CLIENT_ID=${TWITTER_CLIENT_ID}
-      - TWITTER_CLIENT_SECRET=${TWITTER_CLIENT_SECRET}
-      - BETTER_AUTH_SECRET=${BETTER_AUTH_SECRET}
-    depends_on:
-      - postgres
-    restart: unless-stopped
-
-  frontend:
-    build: ./frontend
-    ports:
-      - "80:80"
-    depends_on:
-      - backend
-    restart: unless-stopped
-
-volumes:
-  postgres_data:
-```
-
-### 3. Deploy
+### 1. Configure Environment
 
 ```bash
-# Set environment variables
-export DB_PASSWORD="strong_password"
-export TWITTER_CLIENT_ID="your_client_id"
-export TWITTER_CLIENT_SECRET="your_client_secret"
-export BETTER_AUTH_SECRET="$(openssl rand -base64 32)"
-
-# Start services
-docker-compose -f docker-compose.prod.yml up -d
-
-# View logs
-docker-compose logs -f
+cd backend
+cp .env.example .env
 ```
 
-## Nginx Configuration
+Edit `.env` with production values:
+```env
+PORT=3005
+BETTER_AUTH_SECRET=<openssl rand -base64 32>
+BETTER_AUTH_URL=https://api.yourdomain.com
+TRUSTED_ORIGINS=https://yourdomain.com
+APP_URL=https://yourdomain.com
+RESEND_API_KEY=re_xxxxx
+RESEND_FROM_EMAIL=noreply@yourdomain.com
+```
 
-### Reverse Proxy for API
+### 2. Docker Compose
+
+```bash
+# From project root
+docker-compose up -d
+```
+
+This starts:
+- Backend (Hono + SQLite) on port 3005
+- Frontend on port 3000
+
+### 3. Nginx Reverse Proxy
 
 ```nginx
 server {
     listen 80;
     server_name yourdomain.com;
 
-    # Frontend
     location / {
-        proxy_pass http://frontend:80;
+        proxy_pass http://localhost:3000;
         proxy_set_header Host $host;
         proxy_set_header X-Real-IP $remote_addr;
     }
 
-    # Backend API
     location /api/ {
-        proxy_pass http://backend:3005/api/;
+        proxy_pass http://localhost:3005/api/;
         proxy_set_header Host $host;
         proxy_set_header X-Real-IP $remote_addr;
         proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
         proxy_set_header X-Forwarded-Proto $scheme;
         proxy_set_header X-Forwarded-Host $host;
-
-        # Cookie passthrough
         proxy_cookie_path / /;
-        proxy_cookie_domain backend $host;
     }
 }
 ```
 
-### HTTPS with Let's Encrypt
+### 4. HTTPS with Let's Encrypt
 
 ```bash
-# Install certbot
 sudo apt-get install certbot python3-certbot-nginx
-
-# Get certificate
 sudo certbot --nginx -d yourdomain.com
-
-# Auto-renewal
-sudo certbot renew --dry-run
 ```
+
+---
+
+## VPS / Cloud Deployment
+
+### Direct Node.js / Bun
+
+```bash
+cd backend
+
+# Install dependencies
+bun install
+bun add better-sqlite3
+
+# Set environment
+export BETTER_AUTH_SECRET="$(openssl rand -base64 32)"
+export BETTER_AUTH_URL="https://api.yourdomain.com"
+export TRUSTED_ORIGINS="https://yourdomain.com"
+export APP_URL="https://yourdomain.com"
+
+# Start server
+bun run src/node.ts
+```
+
+### With PostgreSQL
+
+Edit `src/node.ts` to use PostgreSQL instead of SQLite:
+```typescript
+import pg from "pg";
+const pool = new pg.Pool({ connectionString: process.env.DATABASE_URL });
+// Pass `pool` as the database in authConfig
+```
+
+Install `pg`:
+```bash
+bun add pg @types/pg
+```
+
+### Process Manager (PM2)
+
+```bash
+# Install PM2
+npm install -g pm2
+
+# Start
+pm2 start "bun run src/node.ts" --name auth-backend
+
+# Auto-restart on reboot
+pm2 startup
+pm2 save
+```
+
+---
+
+## Frontend Deployment
+
+### Vercel
+
+1. Import repo on [vercel.com](https://vercel.com)
+2. Set root directory to `frontend/`
+3. Add environment variables:
+   ```
+   VITE_API_URL=https://api.yourdomain.com
+   VITE_APP_URL=https://yourdomain.com
+   ```
+4. Deploy
+
+### Cloudflare Pages
+
+```bash
+cd frontend
+bun run build
+npx wrangler pages deploy dist --project-name=my-auth-app
+```
+
+### Static Hosting
+
+```bash
+cd frontend
+bun run build
+# Upload `dist/` to any static host (S3, Nginx, etc.)
+```
+
+---
+
+## Environment Variables
+
+### Backend (Cloudflare Workers)
+
+Set via `wrangler secret put` or `wrangler.toml [vars]`:
+
+| Variable | Required | Description |
+|----------|----------|-------------|
+| `BETTER_AUTH_SECRET` | Yes | Session encryption key (min 32 chars) |
+| `BETTER_AUTH_URL` | Yes | Backend public URL |
+| `APP_URL` | Yes | Frontend public URL |
+| `TRUSTED_ORIGINS` | Yes | Comma-separated allowed origins |
+| `GOOGLE_CLIENT_ID` | No | Google OAuth client ID |
+| `GOOGLE_CLIENT_SECRET` | No | Google OAuth client secret |
+| `TWITTER_CLIENT_ID` | No | Twitter OAuth client ID |
+| `TWITTER_CLIENT_SECRET` | No | Twitter OAuth client secret |
+| `RESEND_API_KEY` | No | Resend API key for emails |
+| `RESEND_FROM_EMAIL` | No | Sender email address |
+
+### Backend (Node.js / Bun)
+
+Same as above, plus:
+
+| Variable | Required | Description |
+|----------|----------|-------------|
+| `PORT` | No | Server port (default: 3005) |
+| `DB_PATH` | No | SQLite path (default: ./data/local.db) |
+
+### Frontend
+
+| Variable | Required | Description |
+|----------|----------|-------------|
+| `VITE_API_URL` | Yes | Backend API URL |
+| `VITE_APP_URL` | Yes | Frontend URL |
+
+---
 
 ## Security Checklist
 
 ### Before Deployment
 
-- [ ] Generate new `BETTER_AUTH_SECRET` (never reuse dev secret)
-- [ ] Use strong database password
-- [ ] Set `NODE_ENV=production`
+- [ ] Generate new `BETTER_AUTH_SECRET` (`openssl rand -base64 32`)
 - [ ] Enable HTTPS (required for secure cookies)
-- [ ] Configure CORS with specific origins (no wildcards)
-- [ ] Set up rate limiting
-- [ ] Enable security headers (Helmet)
-- [ ] Review Twitter OAuth callback URLs
-- [ ] Set up database backups
-- [ ] Configure logging and monitoring
-- [ ] Test authentication flows in staging
+- [ ] Set `TRUSTED_ORIGINS` to exact production URLs (no wildcards)
+- [ ] Configure OAuth callback URLs in provider dashboards
+- [ ] Set up Resend with verified sender domain
+- [ ] Test all auth flows in staging
 - [ ] Set up error tracking (Sentry, etc.)
-
-### Database Security
-
-```sql
--- Create read-only user for monitoring
-CREATE USER auth_readonly WITH PASSWORD 'readonly_password';
-GRANT CONNECT ON DATABASE auth_db TO auth_readonly;
-GRANT SELECT ON ALL TABLES IN SCHEMA public TO auth_readonly;
-
--- Create app user with limited permissions
-CREATE USER auth_app WITH PASSWORD 'app_password';
-GRANT CONNECT ON DATABASE auth_db TO auth_app;
-GRANT SELECT, INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA public TO auth_app;
-```
 
 ### Cookie Security
 
-Ensure production cookies are configured correctly:
-
+Better Auth automatically configures cookies:
 ```typescript
 {
-  httpOnly: true,      // ✅ Prevents XSS
-  secure: true,        // ✅ HTTPS only
-  sameSite: 'lax',    // ✅ CSRF protection
-  domain: undefined,   // ✅ Same origin only
+  httpOnly: true,      // Prevents XSS
+  secure: true,        // HTTPS only (when baseURL is https)
+  sameSite: 'lax',     // CSRF protection
 }
 ```
 
 ### Environment Variables
 
 **Never commit:**
-- `.env` files
-- Secrets or API keys
+- `.env` / `.dev.vars` files
+- API keys or secrets
 - Database credentials
 
 **Use:**
-- Environment variable management (Vercel/Railway/etc.)
-- Secret managers (AWS Secrets Manager, etc.)
-- `.env.example` for documentation
+- `wrangler secret put` for Cloudflare
+- Environment variable management for VPS (systemd, PM2, etc.)
+- `.env.example` / `.dev.vars.example` for documentation only
+
+---
 
 ## Monitoring
 
 ### Health Checks
 
 ```bash
-# Check backend
 curl https://api.yourdomain.com/health
-
-# Expected response
-{"status":"ok","timestamp":"2024-01-01T00:00:00.000Z"}
+# {"status":"ok","timestamp":"2026-01-01T00:00:00.000Z"}
 ```
 
-### Database Monitoring
+### Cloudflare Analytics
 
-```sql
--- Active connections
-SELECT count(*) FROM pg_stat_activity;
+Workers analytics available in Cloudflare dashboard — request counts, errors, latency.
 
--- Long-running queries
-SELECT pid, now() - query_start as duration, query
-FROM pg_stat_activity
-WHERE state = 'active'
-ORDER BY duration DESC;
-```
+### D1 Analytics
 
-### Application Logs
+D1 query metrics available in Cloudflare dashboard — reads, writes, storage.
 
-Using PM2:
-```bash
-# Install PM2
-npm install -g pm2
+---
 
-# Start with PM2
-pm2 start server.ts --name auth-backend
+## Cost Comparison
 
-# View logs
-pm2 logs auth-backend
+| | Cloudflare | Docker/VPS | Vercel + DB |
+|---|---|---|---|
+| Backend | Free (100k req/day) | $5-20/mo | $0-20/mo |
+| Database | Free (5GB D1) | Free (SQLite) | $10-50/mo |
+| Frontend | Free (Pages) | Included | Free (Vercel) |
+| **Total** | **Free** | **$5-20/mo** | **$10-70/mo** |
 
-# Monitor
-pm2 monit
-```
-
-## Scaling
-
-### Horizontal Scaling
-
-1. **Stateless Backend**
-   - Sessions stored in database (not memory)
-   - Multiple backend instances can share load
-
-2. **Load Balancer**
-   ```nginx
-   upstream backend {
-       server backend1:3005;
-       server backend2:3005;
-       server backend3:3005;
-   }
-   ```
-
-3. **Database Connection Pooling**
-   ```typescript
-   new Pool({
-       max: 20,  // Max connections per instance
-       // ...
-   })
-   ```
-
-### Caching
-
-Add Redis for session caching:
-
-```typescript
-import Redis from 'ioredis';
-
-const redis = new Redis(process.env.REDIS_URL);
-
-// Cache session lookups
-const cachedSession = await redis.get(`session:${token}`);
-if (cachedSession) return JSON.parse(cachedSession);
-
-// Cache for 5 minutes
-await redis.setex(`session:${token}`, 300, JSON.stringify(session));
-```
-
-## Backup & Recovery
-
-### Database Backups
-
-```bash
-# Automated daily backups
-0 2 * * * pg_dump -U postgres auth_db > /backups/auth_db_$(date +\%Y\%m\%d).sql
-
-# Restore from backup
-psql -U postgres auth_db < /backups/auth_db_20240101.sql
-```
-
-### Disaster Recovery Plan
-
-1. Database backups stored in S3/Google Cloud Storage
-2. Environment variables documented in password manager
-3. Infrastructure as Code (Terraform, etc.)
-4. Recovery Time Objective (RTO): < 1 hour
-5. Recovery Point Objective (RPO): < 24 hours
-
-## Cost Optimization
-
-### Free Tier Options
-
-- **Database**: Neon (500MB), Supabase (500MB)
-- **Backend**: Railway (500 hours/month), Render (750 hours/month)
-- **Frontend**: Vercel (unlimited), Netlify (100GB)
-- **Monitoring**: Sentry (5k errors/month)
-
-### Estimated Costs (Production)
-
-- Database (Managed): $10-50/month
-- Backend Hosting: $5-20/month
-- Frontend (CDN): $0-5/month
-- **Total**: $15-75/month for small-medium traffic
-
-## Troubleshooting
-
-### Cookies Not Working in Production
-
-1. Ensure HTTPS is enabled
-2. Check `secure: true` in cookie config
-3. Verify `sameSite` is set correctly
-4. Check CORS origin matches exactly
-5. Review reverse proxy cookie passthrough
-
-### Twitter OAuth Callback Fails
-
-1. Update callback URL in Twitter Dev Portal
-2. Ensure it matches production URL exactly
-3. Check `APP_URL` environment variable
-4. Verify DNS is properly configured
-
-### Database Connection Errors
-
-1. Check connection string format
-2. Verify firewall allows connections
-3. Check database user permissions
-4. Review connection pool settings
+---
 
 ## Support
 
-- [Better Auth Discord](https://discord.gg/better-auth)
-- [GitHub Issues](https://github.com/yourusername/better-auth-template/issues)
-- [Documentation](https://www.better-auth.com/docs)
+- [Better Auth Documentation](https://www.better-auth.com/docs)
+- [Hono Documentation](https://hono.dev/)
+- [Cloudflare Workers Documentation](https://developers.cloudflare.com/workers/)
