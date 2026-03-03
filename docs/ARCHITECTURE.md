@@ -55,7 +55,7 @@ Option A: Cloudflare                    Option B: Traditional
 │ + D1 (SQLite)        │               │ + SQLite / PostgreSQL│
 │                      │               │                      │
 │ Entry: src/index.ts  │               │ Entry: src/node.ts   │
-│ DB: Kysely + D1Dialect│              │ DB: better-sqlite3   │
+│ DB: Kysely + D1Dialect│              │ DB: bun:sqlite      │
 │ Deploy: wrangler     │               │ Deploy: Docker / VPS │
 └──────────────────────┘               └──────────────────────┘
 ```

@@ -232,7 +232,7 @@ better-auth-template/
 | [Hono](https://hono.dev) 4 | Lightweight web framework (Workers, Node.js, Bun) |
 | [Better Auth](https://better-auth.com) 1.4 | Authentication framework |
 | [Kysely](https://kysely.dev) + D1Dialect | Query builder for Cloudflare D1 |
-| [better-sqlite3](https://github.com/WiseLibs/better-sqlite3) | SQLite for Node.js/Bun |
+| `bun:sqlite` (Bun runtime) | Local SQLite driver for `src/node.ts` |
 | [Resend](https://resend.com) | Email delivery (raw fetch) |
 
 ### Web3 / Auth

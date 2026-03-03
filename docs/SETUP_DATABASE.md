@@ -1,6 +1,6 @@
 # Database Setup Guide
 
-This project uses **SQLite** for the database — either Cloudflare D1 (production) or better-sqlite3 (local Node.js).
+This project uses **SQLite** for the database — either Cloudflare D1 (production) or Bun `bun:sqlite` (local Node.js/Bun runtime).
 
 ## Cloudflare D1
 

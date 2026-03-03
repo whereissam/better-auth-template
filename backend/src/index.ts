@@ -38,7 +38,7 @@ const app = new Hono<{ Bindings: Env }>();
 app.use("*", logger());
 
 app.use("*", async (c, next) => {
-  const origins = (c.env.TRUSTED_ORIGINS || "http://localhost:3000")
+  const origins = (c.env.TRUSTED_ORIGINS || "http://localhost:4000")
     .split(",")
     .map((o) => o.trim());
   return cors({ origin: origins, credentials: true })(c, next);
@@ -60,10 +60,10 @@ app.all("/api/auth/*", (c) => {
     database: { db, type: "sqlite" },
     secret: c.env.BETTER_AUTH_SECRET,
     baseURL: c.env.BETTER_AUTH_URL,
-    trustedOrigins: (c.env.TRUSTED_ORIGINS || "http://localhost:3000")
+    trustedOrigins: (c.env.TRUSTED_ORIGINS || "http://localhost:4000")
       .split(",")
       .map((o) => o.trim()),
-    appURL: c.env.APP_URL || "http://localhost:3000",
+    appURL: c.env.APP_URL || "http://localhost:4000",
     googleClientId: c.env.GOOGLE_CLIENT_ID,
     googleClientSecret: c.env.GOOGLE_CLIENT_SECRET,
     twitterClientId: c.env.TWITTER_CLIENT_ID,

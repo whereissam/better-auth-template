@@ -5,8 +5,8 @@ compatibility_flags = ["nodejs_compat"]
 
 [vars]
 BETTER_AUTH_URL = "http://localhost:8787"
-APP_URL = "http://localhost:3000"
-TRUSTED_ORIGINS = "http://localhost:3000"
+APP_URL = "http://localhost:4000"
+TRUSTED_ORIGINS = "http://localhost:4000"
 
 # Secrets (set via `wrangler secret put <NAME>`):
 # BETTER_AUTH_SECRET

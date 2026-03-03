@@ -1,4 +1,3 @@
-/// <reference types="vitest" />
 import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
 import tailwindcss from '@tailwindcss/vite';
@@ -15,12 +14,10 @@ export default defineConfig({
     },
   },
   server: {
-    port: 3000,
-    // Proxy for local development (so cookies work same-domain)
-    // Frontend: http://localhost:3000/api/* -> Backend: http://localhost:3005/api/*
+    port: 4000,
     proxy: {
       '/api': {
-        target: 'http://localhost:3005',
+        target: 'http://localhost:4200',
         changeOrigin: true,
         secure: false,
       },
@@ -28,11 +25,5 @@ export default defineConfig({
   },
   build: {
     sourcemap: process.env.NODE_ENV !== 'production',
-  },
-  test: {
-    globals: true,
-    environment: 'jsdom',
-    setupFiles: ['./src/test/setup.ts'],
-    include: ['src/**/*.{test,spec}.{js,mjs,cjs,ts,mts,cts,jsx,tsx}'],
   },
 });

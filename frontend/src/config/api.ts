@@ -5,11 +5,11 @@
  */
 
 // Backend API URL (direct connection for non-auth requests)
-export const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3005';
+export const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:4200';
 
 // Frontend URL for auth callbacks (must go through proxy)
 export const APP_URL = import.meta.env.VITE_APP_URL ||
-  (typeof window !== 'undefined' ? window.location.origin : 'http://localhost:3000');
+  (typeof window !== 'undefined' ? window.location.origin : 'http://localhost:4000');
 
 // API endpoints
 export const API_ENDPOINTS = {

@@ -47,3 +47,6 @@ coverage/
 temp/
 tmp/
 .claude/settings.local.json
+
+# Local SQLite database
+backend/data/

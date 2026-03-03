@@ -6,7 +6,7 @@ import { verifyMessage } from "viem";
 import { sendEmail, sendOTP, sendMagicLinkEmail } from "./email";
 
 export interface AuthConfig {
-  /** Better Auth database config (Kysely instance, better-sqlite3 Database, pg Pool, etc.) */
+  /** Better Auth database config (Kysely instance, Bun SQLite Database, pg Pool, etc.) */
   database: any;
   secret: string;
   baseURL: string;
@@ -115,7 +115,7 @@ export function createAuth(config: AuthConfig) {
         allowedAttempts: 3,
       }),
       siwe({
-        domain: config.siweDomain || "localhost:3000",
+        domain: config.siweDomain || "localhost:4000",
         emailDomainName: config.siweEmailDomain || "localhost",
         anonymous: true,
         getNonce: async () => {

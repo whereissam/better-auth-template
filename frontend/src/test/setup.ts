@@ -3,9 +3,9 @@ import { vi } from 'vitest';
 
 // Mock window.location
 const mockLocation = {
-  origin: 'http://localhost:3000',
-  host: 'localhost:3000',
-  href: 'http://localhost:3000',
+  origin: 'http://localhost:4000',
+  host: 'localhost:4000',
+  href: 'http://localhost:4000',
   pathname: '/',
   search: '',
   hash: '',

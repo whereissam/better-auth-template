@@ -6,9 +6,9 @@ services:
       dockerfile: Dockerfile
     container_name: better-auth-frontend
     ports:
-      - "3000:3000"
+      - "4000:4000"
     environment:
-      - VITE_API_URL=http://backend:3005
+      - VITE_API_URL=http://backend:4200
     volumes:
       - ./frontend:/app
       - /app/node_modules
@@ -26,14 +26,14 @@ services:
       dockerfile: Dockerfile
     container_name: better-auth-backend
     ports:
-      - "3005:3005"
+      - "4200:4200"
     env_file:
       - ./backend/.env
     environment:
-      - PORT=3005
+      - PORT=4200
       - DB_PATH=/app/data/local.db
-      - TRUSTED_ORIGINS=http://localhost:3000
-      - APP_URL=http://localhost:3000
+      - TRUSTED_ORIGINS=http://localhost:4000
+      - APP_URL=http://localhost:4000
     volumes:
       - ./backend:/app
       - /app/node_modules

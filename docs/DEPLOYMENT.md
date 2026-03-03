@@ -140,7 +140,7 @@ cd backend
 
 # Install dependencies
 bun install
-bun add better-sqlite3
+# bun:sqlite is built into Bun; no extra package needed
 
 # Set environment
 export BETTER_AUTH_SECRET="$(openssl rand -base64 32)"
