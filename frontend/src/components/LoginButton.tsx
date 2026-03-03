@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useAuth } from '@/hooks/useAuth';
+import { isWagmiEnabled } from '@/lib/wagmi';
 import { ConnectButton } from '@rainbow-me/rainbowkit';
 import { EmailAuthForm } from './EmailAuthForm';
 import { PasskeyAuth } from './PasskeyAuth';
@@ -203,7 +204,7 @@ const AuthModal = ({ onClose }: AuthModalProps) => {
           )}
 
           {/* Ethereum Wallet - Connect wallet, then auto-triggers SIWE */}
-          {enableSiwe && (
+          {enableSiwe && isWagmiEnabled && (
             <ConnectButton.Custom>
               {({
                 openConnectModal,
