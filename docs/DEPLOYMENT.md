@@ -35,9 +35,14 @@ Update `[vars]` for production:
 ```toml
 [vars]
 BETTER_AUTH_URL = "https://api.yourdomain.com"
-APP_URL = "https://yourdomain.com"
-TRUSTED_ORIGINS = "https://yourdomain.com"
+APP_URL = "https://app.yourdomain.com"
+TRUSTED_ORIGINS = "https://app.yourdomain.com"
 ```
+
+URL mapping:
+- `BETTER_AUTH_URL`: backend public URL
+- `APP_URL`: frontend public URL
+- `TRUSTED_ORIGINS`: allowed frontend origin(s), comma-separated
 
 ### 3. Set Secrets
 
@@ -77,11 +82,11 @@ cp .env.example .env
 
 Edit `.env` with production values:
 ```env
-PORT=3005
+PORT=4200
 BETTER_AUTH_SECRET=<openssl rand -base64 32>
 BETTER_AUTH_URL=https://api.yourdomain.com
-TRUSTED_ORIGINS=https://yourdomain.com
-APP_URL=https://yourdomain.com
+TRUSTED_ORIGINS=https://app.yourdomain.com
+APP_URL=https://app.yourdomain.com
 RESEND_API_KEY=re_xxxxx
 RESEND_FROM_EMAIL=noreply@yourdomain.com
 ```
@@ -90,12 +95,12 @@ RESEND_FROM_EMAIL=noreply@yourdomain.com
 
 ```bash
 # From project root
-docker-compose up -d
+docker compose up -d
 ```
 
 This starts:
-- Backend (Hono + SQLite) on port 3005
-- Frontend on port 3000
+- Backend (Hono + SQLite) on port 4200
+- Frontend on port 4000
 
 ### 3. Nginx Reverse Proxy
 
@@ -105,13 +110,13 @@ server {
     server_name yourdomain.com;
 
     location / {
-        proxy_pass http://localhost:3000;
+        proxy_pass http://localhost:4000;
         proxy_set_header Host $host;
         proxy_set_header X-Real-IP $remote_addr;
     }
 
     location /api/ {
-        proxy_pass http://localhost:3005/api/;
+        proxy_pass http://localhost:4200/api/;
         proxy_set_header Host $host;
         proxy_set_header X-Real-IP $remote_addr;
         proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
@@ -145,8 +150,8 @@ bun install
 # Set environment
 export BETTER_AUTH_SECRET="$(openssl rand -base64 32)"
 export BETTER_AUTH_URL="https://api.yourdomain.com"
-export TRUSTED_ORIGINS="https://yourdomain.com"
-export APP_URL="https://yourdomain.com"
+export TRUSTED_ORIGINS="https://app.yourdomain.com"
+export APP_URL="https://app.yourdomain.com"
 
 # Start server
 bun run src/node.ts
@@ -191,7 +196,7 @@ pm2 save
 3. Add environment variables:
    ```
    VITE_API_URL=https://api.yourdomain.com
-   VITE_APP_URL=https://yourdomain.com
+   VITE_APP_URL=https://app.yourdomain.com
    ```
 4. Deploy
 
@@ -202,6 +207,9 @@ cd frontend
 bun run build
 npx wrangler pages deploy dist --project-name=my-auth-app
 ```
+
+If you use `frontend/functions/api/[[path]].ts` as API proxy, set Pages environment variable:
+- `BACKEND_URL=https://api.yourdomain.com` (your backend public URL)
 
 ### Static Hosting
 
@@ -238,7 +246,7 @@ Same as above, plus:
 
 | Variable | Required | Description |
 |----------|----------|-------------|
-| `PORT` | No | Server port (default: 3005) |
+| `PORT` | No | Server port (default: 4200) |
 | `DB_PATH` | No | SQLite path (default: ./data/local.db) |
 
 ### Frontend

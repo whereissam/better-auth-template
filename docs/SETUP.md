@@ -59,11 +59,11 @@ cp .env.example .env
 
 Edit `.env` with the same variables above, plus:
 ```env
-PORT=3005
+PORT=4200
 DB_PATH=./data/local.db
-BETTER_AUTH_URL=http://localhost:3005
-TRUSTED_ORIGINS=http://localhost:3000
-APP_URL=http://localhost:3000
+BETTER_AUTH_URL=http://localhost:4200
+TRUSTED_ORIGINS=http://localhost:4000
+APP_URL=http://localhost:4000
 ```
 
 #### Frontend
@@ -75,9 +75,11 @@ cp .env.example .env
 
 Edit `.env`:
 ```env
-VITE_API_URL=http://localhost:8787
-VITE_APP_URL=http://localhost:3000
+VITE_API_URL=http://localhost:4200
+VITE_APP_URL=http://localhost:4000
 ```
+
+If you run Cloudflare Workers (`bun run dev`), set `VITE_API_URL=http://localhost:8787` instead.
 
 ### 4. Set Up Database
 
@@ -101,7 +103,7 @@ Database is created automatically when you run `bun run dev:node`. Migrations ar
 cd backend
 bun run dev        # Cloudflare Workers (port 8787)
 # or
-bun run dev:node   # Node.js / Bun (port 3005)
+bun run dev:node   # Node.js / Bun (port 4200)
 ```
 
 **Terminal 2 — Frontend:**
@@ -110,7 +112,7 @@ cd frontend
 bun run dev
 ```
 
-Visit http://localhost:3000
+Visit http://localhost:4000
 
 ### 6. Test Authentication
 
@@ -197,6 +199,7 @@ CREATE TABLE verification (
 - Ensure callback URL in provider dashboard matches `BETTER_AUTH_URL`
 - Check that `BETTER_AUTH_URL` is set correctly (not `APP_URL`)
 - Verify no extra spaces in env values
+- If using Cloudflare Tunnel, add the current tunnel URL to `TRUSTED_ORIGINS` and set `APP_URL` to that same URL
 
 ### D1 migration errors
 ```bash

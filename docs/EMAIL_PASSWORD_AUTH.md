@@ -96,7 +96,7 @@ Email/password uses Better Auth's standard tables:
 
 1. Start backend: `cd backend && bun run dev`
 2. Start frontend: `cd frontend && bun run dev`
-3. Open http://localhost:3000
+3. Open http://localhost:4000
 4. Click "Sign in" → "Sign up"
 5. Create account with email/password
 6. Check backend console for verification email (dev mode)

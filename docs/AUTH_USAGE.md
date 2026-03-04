@@ -1,132 +1,130 @@
 # Authentication Usage Guide
 
-This project uses a **centralized authentication approach** with the `useAuth` hook.
+This project uses a centralized auth approach with `useAuth` plus provider discovery from `/api/auth/providers`.
 
 ## Unified Auth Hook
 
-All authentication methods are handled through a single hook:
+Use `useAuth` for session state and sign-in actions:
 
 ```tsx
 import { useAuth } from '@/hooks/useAuth';
 
 function MyComponent() {
   const {
-    // Session data
     user,
-    session,
     isLoading,
-
-    // Login methods
-    loginWithGoogle,
-    loginWithTwitter,
-    logout,
+    walletAddress,
+    signInWithGoogle,
+    signInWithTwitter,
+    signInWithTelegram,
+    signInWithEthereum,
+    signOut,
   } = useAuth();
 
-  return (
+  if (isLoading) return <div>Loading...</div>;
+
+  return user ? (
     <div>
-      {user ? (
-        <div>
-          <p>Welcome, {user.name}!</p>
-          <button onClick={logout}>Logout</button>
-        </div>
-      ) : (
-        <div>
-          <button onClick={loginWithGoogle}>Login with Google</button>
-          <button onClick={loginWithTwitter}>Login with Twitter</button>
-        </div>
-      )}
+      <p>Welcome, {user.name ?? user.email}</p>
+      {walletAddress && <p>Wallet: {walletAddress}</p>}
+      <button onClick={signOut}>Logout</button>
+    </div>
+  ) : (
+    <div>
+      <button onClick={signInWithGoogle}>Google</button>
+      <button onClick={signInWithTwitter}>X</button>
+      <button onClick={signInWithTelegram}>Telegram</button>
+      <button onClick={signInWithEthereum}>Ethereum</button>
     </div>
   );
 }
 ```
 
-## Authentication Methods
+## Provider Availability
 
-### 1. Email & Password
+The frontend checks enabled providers dynamically:
+
+```tsx
+import { useProviders } from '@/hooks/useProviders';
+
+const { providers, isLoading } = useProviders();
+// providers.email / google / twitter / telegram / siwe / passkey
+```
+
+`useProviders` calls `GET /api/auth/providers`. Buttons are enabled only when backend credentials/config are present.
+
+## Auth Methods
+
+### 1. Email and Password
+
 ```tsx
 import { authClient } from '@/lib/auth.client';
 
-// Sign up
 await authClient.signUp.email({
-  email: "user@example.com",
-  password: "password123",
-  name: "Test User",
+  email: 'user@example.com',
+  password: 'password123',
+  name: 'Test User',
 });
 
-// Sign in
 await authClient.signIn.email({
-  email: "user@example.com",
-  password: "password123",
+  email: 'user@example.com',
+  password: 'password123',
 });
 ```
 
-### 2. Google OAuth
-```tsx
-const { loginWithGoogle } = useAuth();
+### 2. Google and X OAuth
 
-<button onClick={loginWithGoogle}>
-  Sign in with Google
-</button>
+```tsx
+await authClient.signIn.social({
+  provider: 'google', // or 'twitter'
+  callbackURL: window.location.origin,
+});
 ```
 
-### 3. Twitter/X OAuth
-```tsx
-const { loginWithTwitter } = useAuth();
+### 3. Telegram OAuth (Generic OAuth)
 
-<button onClick={loginWithTwitter}>
-  Sign in with Twitter
-</button>
+```tsx
+await authClient.signIn.oauth2({
+  providerId: 'telegram',
+  callbackURL: window.location.origin,
+});
 ```
 
 ### 4. Magic Link
-```tsx
-import { authClient } from '@/lib/auth.client';
 
-await authClient.signIn.magicLink({
-  email: "user@example.com",
-});
-// User receives email with sign-in link
+```tsx
+await authClient.signIn.magicLink({ email: 'user@example.com' });
 ```
 
 ### 5. Email OTP
-```tsx
-import { authClient } from '@/lib/auth.client';
 
-// Send OTP
+```tsx
 await authClient.emailOtp.sendVerificationOtp({
-  email: "user@example.com",
-  type: "sign-in",
+  email: 'user@example.com',
+  type: 'sign-in',
 });
 
-// Verify OTP
 await authClient.signIn.emailOtp({
-  email: "user@example.com",
-  otp: "123456",
+  email: 'user@example.com',
+  otp: '123456',
 });
 ```
 
-### 6. Logout (works for all methods)
-```tsx
-const { logout } = useAuth();
+### 6. Passkey
 
-<button onClick={logout}>Logout</button>
-```
+Use `PasskeyAuth` for sign-in and `PasskeyManager` for registration/deletion:
+- `authClient.signIn.passkey()`
+- `authClient.passkey.addPasskey()`
+- `authClient.passkey.listUserPasskeys()`
+- `authClient.passkey.deletePasskey()`
 
-## Session Data
+## Common Pitfall: Tunnel Callback URL
 
-```tsx
-const { user, session } = useAuth();
+OAuth hooks send `callbackURL: window.location.origin`. If you open the app from a tunnel URL, backend must allow that origin.
 
-console.log(user?.name);      // User's name
-console.log(user?.email);     // User's email
-console.log(user?.image);     // Profile picture URL
-console.log(session);         // Full session object
-```
+Set in `backend/.env`:
+- `APP_URL=<your current frontend URL>`
+- `TRUSTED_ORIGINS=<same URL, comma-separated if multiple>`
 
-## Benefits of Centralized Auth
-
-1. **Single Source of Truth** - All auth logic in one place
-2. **Consistent API** - Same patterns for all auth methods
-3. **Easy to Use** - Import one hook, get everything
-4. **Type Safe** - Full TypeScript support
-5. **Maintainable** - Changes only needed in one file
+Keep backend URL separate:
+- Local Node.js/Bun backend: `BETTER_AUTH_URL=http://localhost:4200`

@@ -63,12 +63,12 @@ Complete guide to set up Google OAuth authentication.
 **Name**: "Better Auth Web Client" (or any name)
 
 **Authorized JavaScript origins** (for CORS):
-- Development: `http://localhost:3000`
+- Development: `http://localhost:4000`
 - Production: `https://yourdomain.com`
 
 **Authorized redirect URIs**:
 - Development: `http://localhost:8787/api/auth/callback/google` (Cloudflare Workers)
-- Development: `http://localhost:3005/api/auth/callback/google` (Node.js)
+- Development: `http://localhost:4200/api/auth/callback/google` (Node.js)
 - Production: `https://api.yourdomain.com/api/auth/callback/google`
 
 **Important**: The redirect URI must match exactly, including:
@@ -116,7 +116,7 @@ bun run dev:node  # Node.js
 
 ## 7. Test Authentication
 
-1. Start your app: `http://localhost:3000`
+1. Start your app: `http://localhost:4000`
 2. Click "Continue with Google"
 3. You should be redirected to Google's login page
 4. Sign in with a test user account
@@ -147,8 +147,13 @@ bun run dev:node  # Node.js
 
 Common mistakes:
 - `http://localhost:8787/api/auth/callback/google` ✅
+- `http://localhost:4200/api/auth/callback/google` ✅
 - `http://localhost:8787/api/auth/callback/google/` ❌ (trailing slash)
 - `http://127.0.0.1:8787/api/auth/callback/google` ❌ (use localhost, not 127.0.0.1)
+
+If your app is opened through a tunnel domain, also set:
+- `APP_URL` to that exact frontend tunnel URL
+- `TRUSTED_ORIGINS` to include that URL
 
 ### Error: "This app has not been verified"
 
@@ -197,7 +202,7 @@ https://yourdomain.com
 
 Add production callback:
 ```
-https://yourdomain.com/api/auth/callback/google
+https://api.yourdomain.com/api/auth/callback/google
 ```
 
 ### 3. Update Environment Variables
@@ -256,18 +261,18 @@ You can create separate OAuth clients for each environment:
 
 ### Development OAuth Client
 - **Name**: "My App (Development)"
-- **Origins**: `http://localhost:3000`
-- **Redirect**: `http://localhost:3000/api/auth/callback/google`
+- **Origins**: `http://localhost:4000`
+- **Redirect**: `http://localhost:4200/api/auth/callback/google`
 
 ### Staging OAuth Client
 - **Name**: "My App (Staging)"
 - **Origins**: `https://staging.yourdomain.com`
-- **Redirect**: `https://staging.yourdomain.com/api/auth/callback/google`
+- **Redirect**: `https://api.staging.yourdomain.com/api/auth/callback/google`
 
 ### Production OAuth Client
 - **Name**: "My App (Production)"
 - **Origins**: `https://yourdomain.com`
-- **Redirect**: `https://yourdomain.com/api/auth/callback/google`
+- **Redirect**: `https://api.yourdomain.com/api/auth/callback/google`
 
 Then use different Client IDs/Secrets in each environment's `.env` file.
 

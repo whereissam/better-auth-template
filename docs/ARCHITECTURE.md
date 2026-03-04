@@ -8,7 +8,7 @@ Detailed explanation of the authentication architecture.
 ┌─────────────────────────────────────────────────────────────┐
 │                         Frontend                             │
 │  ┌───────────────────────────────────────────────────────┐  │
-│  │  React App (http://localhost:3000)                    │  │
+│  │  React App (http://localhost:4000)                    │  │
 │  │  ┌─────────────────┐  ┌──────────────────┐           │  │
 │  │  │  useEmailAuth   │  │    useAuth       │           │  │
 │  │  └────────┬────────┘  └────────┬─────────┘           │  │
@@ -31,7 +31,7 @@ Detailed explanation of the authentication architecture.
 │                       Backend                                │
 │  ┌───────────────────────────────────────────────────────┐  │
 │  │  Hono Server                                          │  │
-│  │  Cloudflare Workers (:8787) or Node.js (:3005)       │  │
+│  │  Cloudflare Workers (:8787) or Node.js (:4200)       │  │
 │  │                                                       │  │
 │  │  ┌────────────────────┐  ┌──────────────────────┐    │  │
 │  │  │ Better Auth Router │  │  Email Service       │    │  │
@@ -228,7 +228,7 @@ Vite proxy forwards `/api/*` to backend:
 // vite.config.ts
 proxy: {
   '/api': {
-    target: 'http://localhost:8787',  // or :3005 for Node.js
+    target: 'http://localhost:8787',  // or :4200 for Node.js
     changeOrigin: true,
   }
 }
@@ -241,7 +241,7 @@ Frontend and backend on same domain via Cloudflare routing — no proxy needed.
 Reverse proxy (Nginx, Caddy) handles routing:
 ```nginx
 location /api/ {
-    proxy_pass http://backend:3005/api/;
+    proxy_pass http://backend:4200/api/;
     proxy_set_header X-Forwarded-Host $host;
     proxy_set_header X-Forwarded-Proto $scheme;
 }

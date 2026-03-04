@@ -19,6 +19,19 @@ A production-ready authentication starter kit built with [Better Auth](https://b
 - **Node.js / Bun + SQLite** - Self-hosted on any VPS or Docker
 - Same codebase, same auth logic — just a different entry point
 
+## Easy Deploy Compare
+
+Choose quickly, then open the detailed guide:
+
+| Option | Best For | Ops Effort | Read More |
+|---|---|---|---|
+| Cloudflare Workers + D1 | Fastest production setup, lowest maintenance | Low | [Cloudflare Deploy Workflow](docs/CLOUDFLARE_DEPLOY_WORKFLOW.md) |
+| Bun + SQLite | Full control on your own server/VPS | Medium | [Bun + SQLite Deploy Workflow](docs/BUN_SQLITE_DEPLOY_WORKFLOW.md) |
+| Docker (Bun + SQLite) | Reproducible self-hosted environment | Medium | [Docker Setup](docs/DOCKER_SETUP.md) |
+
+Need a fuller comparison first: [Deployment Decision Table](docs/DEPLOYMENT_DECISION_TABLE.md)  
+Need all deployment details: [Deployment Guide](docs/DEPLOYMENT.md)
+
 ## Quick Start
 
 ### Prerequisites
@@ -77,18 +90,18 @@ git clone https://github.com/whereissam/better-auth-template.git
 cd better-auth-template
 
 cp backend/.env.example backend/.env   # edit with your secrets
-docker-compose up -d
+docker compose up -d
 ```
 
-Open [http://localhost:3000](http://localhost:3000) in your browser.
+Open [http://localhost:4000](http://localhost:4000) in your browser.
 
 ## Services
 
 | Service | URL | Description |
 |---------|-----|-------------|
-| Frontend | http://localhost:3000 | React application |
+| Frontend | http://localhost:4000 | React application |
 | Backend (Wrangler) | http://localhost:8787 | Cloudflare Workers dev |
-| Backend (Node.js) | http://localhost:3005 | Node.js / Bun server |
+| Backend (Node.js) | http://localhost:4200 | Node.js / Bun server |
 
 ## Available Commands
 
@@ -97,8 +110,8 @@ Open [http://localhost:3000](http://localhost:3000) in your browser.
 | Command | Description |
 |---------|-------------|
 | `bun run dev:local` | Start backend + frontend concurrently |
-| `docker-compose up -d` | Start all services (Docker) |
-| `docker-compose down` | Stop all services |
+| `docker compose up -d` | Start all services (Docker) |
+| `docker compose down` | Stop all services |
 | `bun run test` | Run all tests |
 
 ### Backend (`cd backend`)
@@ -135,32 +148,37 @@ TWITTER_CLIENT_ID=
 TWITTER_CLIENT_SECRET=
 RESEND_API_KEY=
 RESEND_FROM_EMAIL=noreply@yourdomain.com
-SIWE_DOMAIN=localhost:3000
+SIWE_DOMAIN=localhost:4000
 PASSKEY_RP_ID=localhost
 PASSKEY_RP_NAME=Better Auth Template
-PASSKEY_ORIGIN=http://localhost:3000
+PASSKEY_ORIGIN=http://localhost:4000
 ```
+
+For deployed Cloudflare Workers, set URL vars in `backend/wrangler.toml`:
+- `BETTER_AUTH_URL`: backend public URL (e.g. `https://api.yourdomain.com`)
+- `APP_URL`: frontend public URL (e.g. `https://app.yourdomain.com`)
+- `TRUSTED_ORIGINS`: allowed frontend origins (comma-separated)
 
 **Node.js / Bun** — copy `backend/.env.example` to `backend/.env`:
 
 ```env
-PORT=3005
+PORT=4200
 DB_PATH=./data/local.db
 BETTER_AUTH_SECRET=your_random_secret_key_here_min_32_chars
-BETTER_AUTH_URL=http://localhost:3005
-TRUSTED_ORIGINS=http://localhost:3000
-APP_URL=http://localhost:3000
+BETTER_AUTH_URL=http://localhost:4200
+TRUSTED_ORIGINS=http://localhost:4000
+APP_URL=http://localhost:4000
 GOOGLE_CLIENT_ID=
 GOOGLE_CLIENT_SECRET=
 TWITTER_CLIENT_ID=
 TWITTER_CLIENT_SECRET=
 RESEND_API_KEY=re_your_api_key_here
 RESEND_FROM_EMAIL=noreply@yourdomain.com
-SIWE_DOMAIN=localhost:3000
+SIWE_DOMAIN=localhost:4000
 SIWE_EMAIL_DOMAIN=localhost
 PASSKEY_RP_ID=localhost
 PASSKEY_RP_NAME=Better Auth Template
-PASSKEY_ORIGIN=http://localhost:3000
+PASSKEY_ORIGIN=http://localhost:4000
 ```
 
 ### Email Setup (Resend)
@@ -176,13 +194,13 @@ PASSKEY_ORIGIN=http://localhost:3000
 #### Twitter/X
 1. Go to [Twitter Developer Portal](https://developer.twitter.com/en/portal/dashboard)
 2. Create an app with OAuth 2.0
-3. Set callback URL: `http://localhost:8787/api/auth/callback/twitter` (Wrangler) or `http://localhost:3005/api/auth/callback/twitter` (Node.js)
+3. Set callback URL: `http://localhost:8787/api/auth/callback/twitter` (Wrangler) or `http://localhost:4200/api/auth/callback/twitter` (Node.js)
 4. Add credentials to your environment
 
 #### Google
 1. Go to [Google Cloud Console](https://console.cloud.google.com/apis/credentials)
 2. Create OAuth 2.0 credentials
-3. Set callback URL: `http://localhost:8787/api/auth/callback/google` (Wrangler) or `http://localhost:3005/api/auth/callback/google` (Node.js)
+3. Set callback URL: `http://localhost:8787/api/auth/callback/google` (Wrangler) or `http://localhost:4200/api/auth/callback/google` (Node.js)
 4. Add credentials to your environment
 
 ## Project Structure
@@ -257,14 +275,14 @@ bun run dev
 
 # Docker logs
 docker logs better-auth-backend -f
-docker-compose logs -f
+docker compose logs -f
 ```
 
 ### Common Issues
 
 **Port already in use:**
 ```bash
-lsof -i :8787   # or :3005
+lsof -i :8787   # or :4200
 kill -9 <PID>
 ```
 
@@ -282,12 +300,27 @@ bun run db:migrate:local
 - Ensure `SIWE_DOMAIN` matches your frontend origin
 - Check that the `walletAddress` table exists in your database
 
+**OAuth `Invalid callbackURL` (Cloudflare Tunnel):**
+- If you use quick tunnels (`*.trycloudflare.com`), the domain changes each run
+- Update `APP_URL` and `TRUSTED_ORIGINS` in `backend/.env` to your current tunnel URL
+- Keep `BETTER_AUTH_URL` as your backend URL (local Node.js example: `http://localhost:4200`)
+- Restart backend after env changes: `docker compose restart backend`
+
+**Docker backend missing module after rebuild:**
+- If startup fails with errors like `Cannot find module '@hono/node-server'`, renew anonymous volumes:
+```bash
+docker compose up -d --build --force-recreate --renew-anon-volumes backend
+```
+
 ## Documentation
 
 - [Quick Start](docs/QUICKSTART.md)
 - [Setup Guide](docs/SETUP.md)
 - [Architecture Overview](docs/ARCHITECTURE.md)
 - [Deployment Guide](docs/DEPLOYMENT.md)
+- [Deployment Decision Table](docs/DEPLOYMENT_DECISION_TABLE.md)
+- [Cloudflare Deploy Workflow](docs/CLOUDFLARE_DEPLOY_WORKFLOW.md)
+- [Bun + SQLite Deploy Workflow](docs/BUN_SQLITE_DEPLOY_WORKFLOW.md)
 - [Database Setup](docs/SETUP_DATABASE.md)
 - [Docker Setup](docs/DOCKER_SETUP.md)
 - [Auth Usage](docs/AUTH_USAGE.md)

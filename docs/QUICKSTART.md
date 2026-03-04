@@ -55,8 +55,8 @@ bun run dev
 ```
 
 Access:
-- **Frontend**: http://localhost:3000
-- **Backend**: http://localhost:8787 (Cloudflare) or http://localhost:3005 (Node.js)
+- **Frontend**: http://localhost:4000
+- **Backend**: http://localhost:8787 (Cloudflare) or http://localhost:4200 (Node.js)
 
 ---
 
@@ -65,11 +65,14 @@ Access:
 ### "Port already in use"
 
 ```bash
-# Kill process on port 3000 (frontend)
-lsof -ti:3000 | xargs kill -9
+# Kill process on port 4000 (frontend)
+lsof -ti:4000 | xargs kill -9
 
 # Kill process on port 8787 (wrangler)
 lsof -ti:8787 | xargs kill -9
+
+# Kill process on port 4200 (Node.js backend)
+lsof -ti:4200 | xargs kill -9
 ```
 
 ### Cookies not persisting
