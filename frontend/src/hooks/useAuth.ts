@@ -1,6 +1,7 @@
 import { useSessionManager } from './useSessionManager';
 import { useTwitterAuth } from './useTwitterAuth';
 import { useGoogleAuth } from './useGoogleAuth';
+import { useTelegramAuth } from './useTelegramAuth';
 import { isWagmiEnabled } from '@/lib/wagmi';
 import { useEffect, useRef } from 'react';
 
@@ -15,6 +16,7 @@ export const useAuth = () => {
   const session = useSessionManager();
   const twitter = useTwitterAuth();
   const google = useGoogleAuth();
+  const telegram = useTelegramAuth();
 
   // isWagmiEnabled is a module-level constant — hook count is stable across renders
   // eslint-disable-next-line react-hooks/rules-of-hooks
@@ -66,6 +68,7 @@ export const useAuth = () => {
 
     signInWithTwitter: twitter.signIn,
     signInWithGoogle: google.signIn,
+    signInWithTelegram: telegram.signIn,
     signInWithEthereum: siwe.signIn,
 
     isSIWELoading: siwe.isLoading,

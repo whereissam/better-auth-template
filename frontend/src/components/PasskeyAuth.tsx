@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { authClient } from '@/lib/auth.client';
+import { FingerprintIcon } from './ui/icons/fingerprint-icon';
 
 interface PasskeyAuthProps {
   onSuccess?: () => void;
@@ -79,14 +80,14 @@ export const PasskeyAuth = ({ onSuccess, mode = 'both' }: PasskeyAuthProps) => {
   return (
     <div className="w-full">
       {error && (
-        <div className="mb-3 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
-          <p className="text-sm text-yellow-700">{error}</p>
+        <div className="mb-2.5 px-4 py-2.5 bg-amber-50/80 border border-amber-200/60 rounded-2xl">
+          <p className="text-xs text-amber-700">{error}</p>
         </div>
       )}
 
       {success && (
-        <div className="mb-3 p-3 bg-green-50 border border-green-200 rounded-lg">
-          <p className="text-sm text-green-600">{success}</p>
+        <div className="mb-2.5 px-4 py-2.5 bg-green-50/80 border border-green-200/60 rounded-2xl">
+          <p className="text-xs text-green-600">{success}</p>
         </div>
       )}
 
@@ -94,14 +95,12 @@ export const PasskeyAuth = ({ onSuccess, mode = 'both' }: PasskeyAuthProps) => {
         <button
           onClick={handleSignIn}
           disabled={isLoading}
-          className="w-full flex items-center justify-center gap-3 px-6 py-3 bg-gray-900 hover:bg-gray-800 disabled:bg-gray-400 text-white font-medium rounded-lg transition-colors"
+          className="w-full flex items-center justify-center gap-2.5 px-5 py-2.5 bg-gray-900 hover:bg-gray-800 disabled:bg-gray-200 disabled:text-gray-400 disabled:cursor-not-allowed text-white text-sm font-medium rounded-full transition-colors cursor-pointer"
         >
           {isLoading ? (
-            <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+            <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
           ) : (
-            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 11c0 3.517-1.009 6.799-2.753 9.571m-3.44-2.04l.054-.09A13.916 13.916 0 008 11a4 4 0 118 0c0 1.017-.07 2.019-.203 3m-2.118 6.844A21.88 21.88 0 0015.171 17m3.839 1.132c.645-2.266.99-4.659.99-7.132A8 8 0 008 4.07M3 15.364c.64-1.319 1-2.8 1-4.364 0-1.457.39-2.823 1.07-4" />
-            </svg>
+            <FingerprintIcon size={16} />
           )}
           Sign in with Passkey
         </button>
@@ -221,8 +220,8 @@ export const PasskeyManager = ({}: PasskeyManagerProps) => {
 
   if (!supportsPasskey) {
     return (
-      <div className="p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
-        <p className="text-sm text-yellow-700">
+      <div className="px-4 py-3 bg-amber-50/80 border border-amber-200/60 rounded-2xl">
+        <p className="text-sm text-amber-700">
           Your browser or device doesn't support passkeys.
         </p>
       </div>
@@ -231,20 +230,19 @@ export const PasskeyManager = ({}: PasskeyManagerProps) => {
 
   return (
     <div className="space-y-4">
-      <h3 className="text-lg font-semibold text-gray-900">Passkeys</h3>
-      <p className="text-sm text-gray-600">
-        Passkeys are a secure, passwordless way to sign in using your fingerprint, face, or device PIN.
+      <p className="text-sm text-gray-500">
+        Passkeys let you sign in with your fingerprint, face, or device PIN.
       </p>
 
       {error && (
-        <div className="p-3 bg-red-50 border border-red-200 rounded-lg">
-          <p className="text-sm text-red-600">{error}</p>
+        <div className="px-4 py-2.5 bg-red-50/80 border border-red-200/60 rounded-2xl">
+          <p className="text-xs text-red-600">{error}</p>
         </div>
       )}
 
       {success && (
-        <div className="p-3 bg-green-50 border border-green-200 rounded-lg">
-          <p className="text-sm text-green-600">{success}</p>
+        <div className="px-4 py-2.5 bg-green-50/80 border border-green-200/60 rounded-2xl">
+          <p className="text-xs text-green-600">{success}</p>
         </div>
       )}
 
@@ -255,17 +253,17 @@ export const PasskeyManager = ({}: PasskeyManagerProps) => {
           value={newPasskeyName}
           onChange={(e) => setNewPasskeyName(e.target.value)}
           placeholder="Passkey name (optional)"
-          className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:outline-hidden focus:ring-2 focus:ring-blue-500"
+          className="flex-1 px-4 py-2 text-sm border border-gray-200 rounded-full bg-gray-50/50 focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-300 transition-colors"
         />
         <button
           onClick={handleRegister}
           disabled={isRegistering}
-          className="px-4 py-2 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400 text-white font-medium rounded-lg transition-colors"
+          className="px-5 py-2 bg-gray-900 hover:bg-gray-800 disabled:bg-gray-200 disabled:text-gray-400 disabled:cursor-not-allowed text-white text-sm font-medium rounded-full transition-colors cursor-pointer"
         >
           {isRegistering ? (
-            <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+            <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
           ) : (
-            'Add Passkey'
+            'Add'
           )}
         </button>
       </div>
@@ -273,31 +271,31 @@ export const PasskeyManager = ({}: PasskeyManagerProps) => {
       {/* List existing passkeys */}
       {isLoading ? (
         <div className="flex justify-center py-4">
-          <div className="w-6 h-6 border-2 border-gray-300 border-t-blue-500 rounded-full animate-spin" />
+          <div className="w-5 h-5 border-2 border-gray-200 border-t-blue-500 rounded-full animate-spin" />
         </div>
       ) : passkeys.length > 0 ? (
-        <ul className="divide-y divide-gray-200 border border-gray-200 rounded-lg">
+        <ul className="divide-y divide-gray-100 border border-gray-200/60 rounded-2xl overflow-hidden">
           {passkeys.map((passkey) => (
-            <li key={passkey.id} className="flex items-center justify-between p-3">
+            <li key={passkey.id} className="flex items-center justify-between px-4 py-3 bg-white/50">
               <div>
-                <p className="font-medium text-gray-900">
+                <p className="text-sm font-medium text-gray-900">
                   {passkey.name || 'Unnamed passkey'}
                 </p>
-                <p className="text-xs text-gray-500">
-                  Created: {new Date(passkey.createdAt).toLocaleDateString()}
+                <p className="text-xs text-gray-400">
+                  {new Date(passkey.createdAt).toLocaleDateString()}
                 </p>
               </div>
               <button
                 onClick={() => handleDelete(passkey.id)}
-                className="text-red-600 hover:text-red-700 text-sm font-medium"
+                className="text-xs text-red-500 hover:text-red-600 font-medium cursor-pointer transition-colors"
               >
-                Delete
+                Remove
               </button>
             </li>
           ))}
         </ul>
       ) : (
-        <p className="text-sm text-gray-500 text-center py-4">
+        <p className="text-xs text-gray-400 text-center py-3">
           No passkeys registered yet.
         </p>
       )}

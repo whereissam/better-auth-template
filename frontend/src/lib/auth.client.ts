@@ -1,5 +1,5 @@
 import { createAuthClient } from "better-auth/react";
-import { siweClient, emailOTPClient, magicLinkClient } from "better-auth/client/plugins";
+import { siweClient, emailOTPClient, magicLinkClient, genericOAuthClient } from "better-auth/client/plugins";
 import { passkeyClient } from "@better-auth/passkey/client";
 
 /**
@@ -21,7 +21,7 @@ const client = createAuthClient({
     credentials: "include",
   },
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  plugins: [siweClient(), emailOTPClient(), magicLinkClient(), passkeyClient()] as any,
+  plugins: [siweClient(), emailOTPClient(), magicLinkClient(), passkeyClient(), genericOAuthClient()] as any,
 });
 
 // Type definitions for plugin methods
@@ -40,6 +40,7 @@ interface ExtendedAuthClient {
   signIn: {
     email: (opts: { email: string; password: string; rememberMe?: boolean }) => AuthClientResult;
     social: (opts: { provider: string; callbackURL?: string }) => AuthClientResult;
+    oauth2: (opts: { providerId: string; callbackURL?: string }) => AuthClientResult;
     passkey: (opts?: { autoFill?: boolean }) => AuthClientResult;
   };
   signOut: (opts?: { fetchOptions?: FetchOptions }) => AuthClientResult;

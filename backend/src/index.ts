@@ -9,7 +9,7 @@ import { cors } from "hono/cors";
 import { logger } from "hono/logger";
 import { Kysely } from "kysely";
 import { D1Dialect } from "kysely-d1";
-import { createAuth } from "./lib/auth";
+import { createAuth, getEnabledProviders } from "./lib/auth";
 import { rateLimiter } from "./lib/rate-limit";
 
 type Env = {
@@ -22,6 +22,8 @@ type Env = {
   GOOGLE_CLIENT_SECRET?: string;
   TWITTER_CLIENT_ID?: string;
   TWITTER_CLIENT_SECRET?: string;
+  TELEGRAM_CLIENT_ID?: string;
+  TELEGRAM_CLIENT_SECRET?: string;
   RESEND_API_KEY?: string;
   RESEND_FROM_EMAIL?: string;
   SIWE_DOMAIN?: string;
@@ -53,6 +55,31 @@ app.use("/api/*", async (c, next) => {
   return limiter(c, next);
 });
 
+// Expose which auth providers are configured (must be before the catch-all)
+app.get("/api/auth/providers", (c) => {
+  return c.json(
+    getEnabledProviders({
+      database: null,
+      secret: "",
+      baseURL: "",
+      trustedOrigins: [],
+      appURL: "",
+      googleClientId: c.env.GOOGLE_CLIENT_ID,
+      googleClientSecret: c.env.GOOGLE_CLIENT_SECRET,
+      twitterClientId: c.env.TWITTER_CLIENT_ID,
+      twitterClientSecret: c.env.TWITTER_CLIENT_SECRET,
+      telegramClientId: c.env.TELEGRAM_CLIENT_ID,
+      telegramClientSecret: c.env.TELEGRAM_CLIENT_SECRET,
+      resendApiKey: c.env.RESEND_API_KEY,
+      resendFromEmail: c.env.RESEND_FROM_EMAIL,
+      siweDomain: c.env.SIWE_DOMAIN,
+      siweEmailDomain: c.env.SIWE_EMAIL_DOMAIN,
+      passkeyRpId: c.env.PASSKEY_RP_ID,
+      passkeyOrigin: c.env.PASSKEY_ORIGIN,
+    }),
+  );
+});
+
 // Better Auth handler — use app.all to support all HTTP methods
 app.all("/api/auth/*", (c) => {
   const db = new Kysely({ dialect: new D1Dialect({ database: c.env.DB }) });
@@ -68,6 +95,8 @@ app.all("/api/auth/*", (c) => {
     googleClientSecret: c.env.GOOGLE_CLIENT_SECRET,
     twitterClientId: c.env.TWITTER_CLIENT_ID,
     twitterClientSecret: c.env.TWITTER_CLIENT_SECRET,
+    telegramClientId: c.env.TELEGRAM_CLIENT_ID,
+    telegramClientSecret: c.env.TELEGRAM_CLIENT_SECRET,
     resendApiKey: c.env.RESEND_API_KEY,
     resendFromEmail: c.env.RESEND_FROM_EMAIL,
     siweDomain: c.env.SIWE_DOMAIN,

@@ -11,7 +11,7 @@ import { cors } from "hono/cors";
 import { logger } from "hono/logger";
 import { Database } from "bun:sqlite";
 import { readFileSync, mkdirSync } from "fs";
-import { createAuth } from "./lib/auth";
+import { createAuth, getEnabledProviders } from "./lib/auth";
 import { rateLimiter } from "./lib/rate-limit";
 
 const PORT = Number(process.env.PORT) || 4200;
@@ -43,6 +43,8 @@ const authConfig = {
   googleClientSecret: process.env.GOOGLE_CLIENT_SECRET,
   twitterClientId: process.env.TWITTER_CLIENT_ID,
   twitterClientSecret: process.env.TWITTER_CLIENT_SECRET,
+  telegramClientId: process.env.TELEGRAM_CLIENT_ID,
+  telegramClientSecret: process.env.TELEGRAM_CLIENT_SECRET,
   resendApiKey: process.env.RESEND_API_KEY,
   resendFromEmail: process.env.RESEND_FROM_EMAIL,
   siweDomain: process.env.SIWE_DOMAIN,
@@ -65,6 +67,11 @@ app.use(
     max: Number(process.env.RATE_LIMIT_MAX_REQUESTS) || 1000,
   }),
 );
+
+// Expose which auth providers are configured (must be before the catch-all)
+app.get("/api/auth/providers", (c) => {
+  return c.json(getEnabledProviders(authConfig));
+});
 
 // Better Auth handler
 app.on(["POST", "GET"], "/api/auth/**", (c) => {
