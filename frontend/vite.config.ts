@@ -5,6 +5,9 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
+const allowedHosts = process.env.VITE_ALLOWED_HOSTS
+  ? process.env.VITE_ALLOWED_HOSTS.split(',').map((h) => h.trim()).filter(Boolean)
+  : undefined;
 
 export default defineConfig({
   plugins: [react(), tailwindcss()],
@@ -15,6 +18,7 @@ export default defineConfig({
   },
   server: {
     port: 4000,
+    ...(allowedHosts && allowedHosts.length ? { allowedHosts } : {}),
     proxy: {
       '/api': {
         target: 'http://localhost:4200',

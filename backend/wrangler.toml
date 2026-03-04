@@ -1,12 +1,15 @@
-name = "better-auth-backend"
+name = "your-worker-name"
 main = "src/index.ts"
 compatibility_date = "2024-12-01"
 compatibility_flags = ["nodejs_compat"]
 
 [vars]
-BETTER_AUTH_URL = "http://localhost:8787"
-APP_URL = "http://localhost:4000"
-TRUSTED_ORIGINS = "http://localhost:4000"
+# Backend public URL (Cloudflare Worker or API domain)
+BETTER_AUTH_URL = "https://api.yourdomain.com"
+# Frontend public URL
+APP_URL = "https://app.yourdomain.com"
+# Allowed frontend origins (comma-separated)
+TRUSTED_ORIGINS = "https://app.yourdomain.com"
 
 # Secrets (set via `wrangler secret put <NAME>`):
 # BETTER_AUTH_SECRET
@@ -18,7 +21,9 @@ TRUSTED_ORIGINS = "http://localhost:4000"
 # RESEND_FROM_EMAIL
 
 [[d1_databases]]
+# Fill after running: wrangler d1 create <name>
+# Then copy `database_name` and `database_id` from command output.
 binding = "DB"
-database_name = "auth-db"
-database_id = "placeholder-replace-with-your-d1-database-id"
+database_name = "your-d1-database-name"
+database_id = "your-d1-database-id"
 migrations_dir = "migrations"
