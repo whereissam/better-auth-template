@@ -1,7 +1,7 @@
 import { betterAuth } from "better-auth";
 import { siwe, emailOTP, magicLink } from "better-auth/plugins";
-import { genericOAuth } from "better-auth/plugins/generic-oauth";
 import { passkey } from "@better-auth/passkey";
+import { telegram } from "better-auth-telegram";
 import { generateRandomString } from "better-auth/crypto";
 import { verifyMessage } from "viem";
 import { sendEmail, sendOTP, sendMagicLinkEmail } from "./email";
@@ -17,8 +17,9 @@ export interface AuthConfig {
   googleClientSecret?: string;
   twitterClientId?: string;
   twitterClientSecret?: string;
-  telegramClientId?: string;
-  telegramClientSecret?: string;
+  telegramBotToken?: string;
+  telegramBotUsername?: string;
+  telegramOidcClientSecret?: string;
   resendApiKey?: string;
   resendFromEmail?: string;
   /** SIWE config */
@@ -36,7 +37,7 @@ export function getEnabledProviders(config: AuthConfig) {
     email: !!(config.resendApiKey && config.resendFromEmail),
     google: !!(config.googleClientId && config.googleClientSecret),
     twitter: !!(config.twitterClientId && config.twitterClientSecret),
-    telegram: !!(config.telegramClientId?.trim() && config.telegramClientSecret?.trim()),
+    telegram: !!(config.telegramBotToken?.trim() && config.telegramBotUsername?.trim()),
     siwe: !!(config.siweDomain || config.siweEmailDomain),
     passkey: !!(config.passkeyRpId || config.passkeyOrigin),
   };
@@ -50,8 +51,9 @@ export function createAuth(config: AuthConfig) {
     RESEND_FROM_EMAIL: config.resendFromEmail,
   };
 
-  const telegramClientId = config.telegramClientId?.trim();
-  const telegramClientSecret = config.telegramClientSecret?.trim();
+  const telegramBotToken = config.telegramBotToken?.trim();
+  const telegramBotUsername = config.telegramBotUsername?.trim();
+  const telegramOidcSecret = config.telegramOidcClientSecret?.trim();
 
   return betterAuth({
     database: config.database,
@@ -164,56 +166,20 @@ export function createAuth(config: AuthConfig) {
           userVerification: "preferred",
         },
       }),
-      ...(telegramClientId && telegramClientSecret
+      ...(telegramBotToken && telegramBotUsername
         ? [
-            genericOAuth({
-              config: [
-                {
-                  providerId: "telegram",
-                  authorizationUrl: "https://oauth.telegram.org/auth",
-                  tokenUrl: "https://oauth.telegram.org/token",
-                  clientId: telegramClientId,
-                  clientSecret: telegramClientSecret,
-                  scopes: ["openid", "profile", "phone"],
-                  pkce: true,
-                  authentication: "basic",
-                  getUserInfo: async (tokens) => {
-                    const idToken = tokens.idToken;
-                    if (!idToken) return null;
-
-                    const payloadSegment = idToken.split(".")[1];
-                    if (!payloadSegment) return null;
-
-                    const base64 = payloadSegment
-                      .replace(/-/g, "+")
-                      .replace(/_/g, "/")
-                      .padEnd(Math.ceil(payloadSegment.length / 4) * 4, "=");
-                    const payloadJson = atob(base64);
-                    const payload = JSON.parse(payloadJson) as {
-                      sub?: string | number;
-                      name?: string;
-                      preferred_username?: string;
-                      picture?: string;
-                      phone_number?: string;
-                    };
-
-                    if (!payload.sub) return null;
-
-                    return {
-                      id: String(payload.sub),
-                      name:
-                        payload.name ||
-                        payload.preferred_username ||
-                        `tg_${payload.sub}`,
-                      email: payload.phone_number
-                        ? `${payload.phone_number}@telegram.local`
-                        : null,
-                      image: payload.picture,
-                      emailVerified: true,
-                    };
-                  },
-                },
-              ],
+            telegram({
+              botToken: telegramBotToken,
+              botUsername: telegramBotUsername,
+              ...(telegramOidcSecret
+                ? {
+                    oidc: {
+                      enabled: true,
+                      clientSecret: telegramOidcSecret,
+                      requestPhone: true,
+                    },
+                  }
+                : {}),
             }),
           ]
         : []),

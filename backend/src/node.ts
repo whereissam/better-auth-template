@@ -43,8 +43,9 @@ const authConfig = {
   googleClientSecret: process.env.GOOGLE_CLIENT_SECRET,
   twitterClientId: process.env.TWITTER_CLIENT_ID,
   twitterClientSecret: process.env.TWITTER_CLIENT_SECRET,
-  telegramClientId: process.env.TELEGRAM_CLIENT_ID,
-  telegramClientSecret: process.env.TELEGRAM_CLIENT_SECRET,
+  telegramBotToken: process.env.TELEGRAM_BOT_TOKEN,
+  telegramBotUsername: process.env.TELEGRAM_BOT_USERNAME,
+  telegramOidcClientSecret: process.env.TELEGRAM_OIDC_CLIENT_SECRET,
   resendApiKey: process.env.RESEND_API_KEY,
   resendFromEmail: process.env.RESEND_FROM_EMAIL,
   siweDomain: process.env.SIWE_DOMAIN,
@@ -74,7 +75,7 @@ app.get("/api/auth/providers", (c) => {
 });
 
 // Better Auth handler
-app.on(["POST", "GET"], "/api/auth/**", (c) => {
+app.on(["POST", "GET"], "/api/auth/*", (c) => {
   const auth = createAuth(authConfig);
   return auth.handler(c.req.raw);
 });

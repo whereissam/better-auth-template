@@ -22,8 +22,9 @@ type Env = {
   GOOGLE_CLIENT_SECRET?: string;
   TWITTER_CLIENT_ID?: string;
   TWITTER_CLIENT_SECRET?: string;
-  TELEGRAM_CLIENT_ID?: string;
-  TELEGRAM_CLIENT_SECRET?: string;
+  TELEGRAM_BOT_TOKEN?: string;
+  TELEGRAM_BOT_USERNAME?: string;
+  TELEGRAM_OIDC_CLIENT_SECRET?: string;
   RESEND_API_KEY?: string;
   RESEND_FROM_EMAIL?: string;
   SIWE_DOMAIN?: string;
@@ -68,8 +69,8 @@ app.get("/api/auth/providers", (c) => {
       googleClientSecret: c.env.GOOGLE_CLIENT_SECRET,
       twitterClientId: c.env.TWITTER_CLIENT_ID,
       twitterClientSecret: c.env.TWITTER_CLIENT_SECRET,
-      telegramClientId: c.env.TELEGRAM_CLIENT_ID,
-      telegramClientSecret: c.env.TELEGRAM_CLIENT_SECRET,
+      telegramBotToken: c.env.TELEGRAM_BOT_TOKEN,
+      telegramBotUsername: c.env.TELEGRAM_BOT_USERNAME,
       resendApiKey: c.env.RESEND_API_KEY,
       resendFromEmail: c.env.RESEND_FROM_EMAIL,
       siweDomain: c.env.SIWE_DOMAIN,
@@ -95,8 +96,9 @@ app.all("/api/auth/*", (c) => {
     googleClientSecret: c.env.GOOGLE_CLIENT_SECRET,
     twitterClientId: c.env.TWITTER_CLIENT_ID,
     twitterClientSecret: c.env.TWITTER_CLIENT_SECRET,
-    telegramClientId: c.env.TELEGRAM_CLIENT_ID,
-    telegramClientSecret: c.env.TELEGRAM_CLIENT_SECRET,
+    telegramBotToken: c.env.TELEGRAM_BOT_TOKEN,
+    telegramBotUsername: c.env.TELEGRAM_BOT_USERNAME,
+    telegramOidcClientSecret: c.env.TELEGRAM_OIDC_CLIENT_SECRET,
     resendApiKey: c.env.RESEND_API_KEY,
     resendFromEmail: c.env.RESEND_FROM_EMAIL,
     siweDomain: c.env.SIWE_DOMAIN,

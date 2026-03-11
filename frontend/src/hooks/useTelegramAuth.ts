@@ -1,15 +1,14 @@
 import { authClient } from '@/lib/auth.client';
 
 /**
- * Telegram OAuth (OIDC) Authentication Hook
+ * Telegram Authentication Hook
  *
- * Uses Better Auth genericOAuth plugin with Telegram's OIDC provider.
+ * Uses better-auth-telegram plugin's OIDC flow.
  */
 export const useTelegramAuth = () => {
   const signIn = async () => {
     try {
-      await authClient.signIn.oauth2({
-        providerId: 'telegram',
+      await (authClient as any).signInWithTelegramOIDC({
         callbackURL: window.location.origin,
       });
     } catch (error) {

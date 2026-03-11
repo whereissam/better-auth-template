@@ -1,6 +1,7 @@
 import { createAuthClient } from "better-auth/react";
-import { siweClient, emailOTPClient, magicLinkClient, genericOAuthClient } from "better-auth/client/plugins";
+import { siweClient, emailOTPClient, magicLinkClient } from "better-auth/client/plugins";
 import { passkeyClient } from "@better-auth/passkey/client";
+import { telegramClient } from "better-auth-telegram/client";
 
 /**
  * Better Auth React Client
@@ -21,7 +22,7 @@ const client = createAuthClient({
     credentials: "include",
   },
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  plugins: [siweClient(), emailOTPClient(), magicLinkClient(), passkeyClient(), genericOAuthClient()] as any,
+  plugins: [siweClient(), emailOTPClient(), magicLinkClient(), passkeyClient(), telegramClient()] as any,
 });
 
 // Type definitions for plugin methods
